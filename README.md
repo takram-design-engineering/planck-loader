@@ -3,6 +3,105 @@ Planck Loader
 
 Provides for parallel and sequential data loading and progress observation.
 
+[![License](http://img.shields.io/badge/license-MIT-lightgrey.svg?style=flat
+)](http://mit-license.org)
+
+## Getting Started
+
+### Example
+
+The example below will load `data1.json`, `data2.json` and `lib.js` in parallel (in a JavaScript sense), whereas `main.js` will be loaded after loading `lib.js`.
+
+```js
+import { Loader } from 'planck-loader'
+
+const progressBar = document.querySelector('#progress-bar')
+
+const loader = new Loader([
+  'path/to/data1.json',
+  'path/to/data2.json',
+  ['path/to/lib.js', 'path/to/main.js'],
+])
+
+loader.addEventListener('determinate', event => {
+  progressBar.classList.remove('indeterminate')
+})
+
+loader.addEventListener('progress', event => {
+  progressBar.style.width = `${event.target.progress * 100}%`
+})
+
+loader.load().then(requests => {
+  progressBar.classList.add('completed')
+  loader.loaders.forEach(loader => {
+    console.log(loader.url, loader.request.response)
+  })
+}).catch(code => {
+  progressBar.classList.add('failed')
+  console.error(code)
+})
+```
+
+### Installing
+
+```sh
+npm install --save github:takram-design-engineering/planck-loader
+```
+
+## API Reference
+
+### Loader
+
+[#]() new **Loader**(...urls)
+
+The constructor that takes a sequence of URLs or arrays of URLs. The top level arguments will be loaded sequentially, and the second level will be loaded in parallel. Any further depth of array repeats cycles its behavior.
+
+```js
+new Loader(a, b)
+new Loader(a, [c, d], b)
+new Loader(a, [c, [e, f], d], b)
+```
+
+- `a` and `b` are loaded sequentially
+- `c` and `d` are loaded in parallel
+- `e` and `f` are loaded sequentially
+
+Likewise: 
+
+```js
+new Loader([a, b])
+new Loader([a, [c, d], b])
+new Loader([a, [c, [e, f], d], b])
+```
+
+- `a` and `b` are loaded in parallel
+- `c` and `d` are loaded sequentially
+- `e` and `f` are loaded in parallel
+
+[#]() *loader*.**load**()
+
+Returns a `Promise` that resolves with an array of requests (`XMLHTTPRequest`). It rejects with a status code when one of the requests fails.
+
+[#]() *loader*.**size**
+
+`Number` that indicates the size of total payloads in bytes, dispatching an `size` event when the value changes.
+
+[#]() *loader*.**progress**
+
+`Number` that indicates the loading progress between 0-1 in total, dispatching an `progress ` event when the value changes.
+
+[#]() *loader*.**determinate**
+
+`Boolean` Becomes when the loader becomes able to determine the progress, dispatching an `determinate ` event when the value changes.
+
+[#]() *loader*.**completed**
+
+`Boolean` Becomes true when all of the requests completes loadind, dispatching an `completed ` event when the value changes.
+
+[#]() *loader*.**failed**
+
+`Boolean` Becomes true when any loader fails to load, dispatching an `failed ` event when the value changes.
+
 ## License
 
 The MIT License
