@@ -22,8 +22,9 @@
 //  DEALINGS IN THE SOFTWARE.
 //
 
+import { Namespace } from 'planck-core'
+
 import DataLoader from '../loader/DataLoader'
-import Namespace from '../core/Namespace'
 
 export const internal = Namespace('ScriptLoader')
 

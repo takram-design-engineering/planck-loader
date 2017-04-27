@@ -48,7 +48,7 @@ const browserSync = require('browser-sync').create()
 
 // Build
 
-gulp.task('build:js', () => {
+gulp.task('build:main', () => {
   return rollup({
     entry: './src/main.js',
     format: 'umd',
@@ -86,7 +86,7 @@ gulp.task('build:js', () => {
   .pipe(gulp.dest('./build'))
 })
 
-gulp.task('build:js:module', () => {
+gulp.task('build:module', () => {
   return rollup({
     entry: './src/main.js',
     format: 'es',
@@ -116,7 +116,7 @@ gulp.task('build:js:module', () => {
 
 // Compress
 
-gulp.task('compress:js', () => {
+gulp.task('compress:main', () => {
   return gulp.src([
     './build/planck-loader.js',
   ])
@@ -133,7 +133,7 @@ gulp.task('compress:js', () => {
 
 // Lint
 
-gulp.task('lint:js', () => {
+gulp.task('lint', () => {
   return gulp.src([
     './gulpfile.js',
     './src/**/*.js',
@@ -146,7 +146,7 @@ gulp.task('lint:js', () => {
 
 // Test
 
-gulp.task('test:build:js', () => {
+gulp.task('test:build', () => {
   return rollup({
     entry: './test/test.js',
     format: 'umd',
@@ -181,12 +181,12 @@ gulp.task('test:build:js', () => {
   .pipe(gulp.dest('./build/test'))
 })
 
-gulp.task('test:build:js-watch', ['test:build:js'], callback => {
+gulp.task('test:build-watch', ['test:build'], callback => {
   browserSync.reload()
   callback()
 })
 
-gulp.task('test:build:lib', ['build:js'], () => {
+gulp.task('test:build:main', ['build:main'], () => {
   return gulp.src([
     './build/planck-loader.js',
     './build/planck-loader.js.map',
@@ -194,7 +194,7 @@ gulp.task('test:build:lib', ['build:js'], () => {
   .pipe(gulp.dest('./build/test'))
 })
 
-gulp.task('test:build:lib-watch', ['test:build:lib'], callback => {
+gulp.task('test:build:main-watch', ['test:build:main'], callback => {
   browserSync.reload()
   callback()
 })
@@ -236,8 +236,8 @@ gulp.task('test:browser-sync', () => {
 })
 
 gulp.task('test:watch', () => {
-  gulp.watch('./test/test.js', ['test:build:js-watch'])
-  gulp.watch('./src/**/*', ['test:build:lib-watch'])
+  gulp.watch('./test/test.js', ['test:build-watch'])
+  gulp.watch('./src/**/*', ['test:build:main-watch'])
   gulp.watch('./test/test.html', ['test:html'])
   gulp.watch('./test/*/**/*.js', ['test:js-watch'])
 })
@@ -257,21 +257,17 @@ gulp.task('clean', () => {
 gulp.task('build', sequence(...[
   'clean',
   [
-    'build:js',
-    'build:js:module',
+    'build:main',
+    'build:module',
   ],
-  'compress:js',
+  'compress:main',
 ]))
-
-gulp.task('lint', [
-  'lint:js',
-])
 
 gulp.task('test', sequence(...[
   'test:clean',
   [
-    'test:build:js',
-    'test:build:lib',
+    'test:build',
+    'test:build:main',
     'test:html',
     'test:js',
     'test:lib',

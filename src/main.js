@@ -22,12 +22,6 @@
 //  DEALINGS IN THE SOFTWARE.
 //
 
-import DataLoader from './loader/DataLoader'
-import Loader from './loader/Loader'
-import ScriptLoader from './loader/ScriptLoader'
-
-export {
-  DataLoader,
-  Loader,
-  ScriptLoader,
-}
+export { default as DataLoader } from './loader/DataLoader'
+export { default as Loader } from './loader/Loader'
+export { default as ScriptLoader } from './loader/ScriptLoader'

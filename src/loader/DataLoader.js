@@ -23,8 +23,7 @@
 //
 
 import { EventDispatcher } from 'planck-event'
-
-import Namespace from '../core/Namespace'
+import { Namespace } from 'planck-core'
 
 export const internal = Namespace('DataLoader')
 
