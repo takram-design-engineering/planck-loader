@@ -56,6 +56,7 @@ gulp.task('build:main', () => {
     sourceMap: true,
     plugins: [
       nodeResolve({ main: true, module: true, browser: true }),
+      commonjs(),
       babel({
         presets: [
           ['es2015', { modules: false }],
@@ -67,7 +68,6 @@ gulp.task('build:main', () => {
           'external-helpers',
         ],
       }),
-      commonjs(),
     ],
   })
   .on('error', function error(error) {
@@ -92,6 +92,7 @@ gulp.task('build:module', () => {
     format: 'es',
     plugins: [
       nodeResolve({ main: true, module: true, browser: true }),
+      commonjs(),
       babel({
         presets: [
           'es2017',
@@ -101,7 +102,6 @@ gulp.task('build:module', () => {
           'external-helpers',
         ],
       }),
-      commonjs(),
     ],
   })
   .on('error', function error(error) {
@@ -152,6 +152,7 @@ gulp.task('test:build', () => {
     format: 'umd',
     plugins: [
       nodeResolve({ main: true, module: true, browser: true }),
+      commonjs(),
       babel({
         presets: [
           ['es2015', { modules: false }],
@@ -163,7 +164,6 @@ gulp.task('test:build', () => {
           'external-helpers',
         ],
       }),
-      commonjs(),
     ],
   })
   .on('error', function error(error) {
