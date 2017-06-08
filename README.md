@@ -4,7 +4,9 @@ Planck Loader
 Provides for parallel and sequential data loading and progress observation.
 
 [![License](http://img.shields.io/badge/license-MIT-lightgrey.svg?style=flat
-)](http://mit-license.org)
+)](http://mit-license.org) [![Sauce Test Status](https://saucelabs.com/buildstatus/planck-loader)](https://saucelabs.com/u/planck-loader)
+
+[![Sauce Test Status](https://saucelabs.com/browser-matrix/planck-loader.svg)](https://saucelabs.com/u/planck-loader)
 
 ## Getting Started
 
@@ -66,7 +68,7 @@ new Loader(a, [c, [e, f], d], b)
 - `c` and `d` are loaded in parallel
 - `e` and `f` are loaded sequentially
 
-Likewise: 
+Likewise:
 
 ```js
 new Loader([a, b])

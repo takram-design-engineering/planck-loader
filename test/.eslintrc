@@ -6,13 +6,9 @@
   'globals': {
     'afterEach': true,
     'beforeEach': true,
-    'chai': true,
     'describe': true,
     'expect': true,
     'it': true,
-    'mocha': true,
-    'Planck': true,
-    'sinon': true,
   },
   'rules': {
     'no-unused-expressions': 0,

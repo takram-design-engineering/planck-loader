@@ -22,7 +22,20 @@
 //  DEALINGS IN THE SOFTWARE.
 //
 
+import chai from 'chai'
+import chaiAsPromised from 'chai-as-promised'
+import sinon from 'sinon'
+import sinonChai from 'sinon-chai'
+
+import { DataLoader } from '../..'
+
+const expect = chai.expect
+chai.use(chaiAsPromised)
+chai.use(sinonChai)
+
 describe('DataLoader', () => {
+  const host = 'http://localhost:3000'
+
   let server = null
 
   beforeEach(() => {
@@ -39,11 +52,11 @@ describe('DataLoader', () => {
   })
 
   it('supports instanceof', () => {
-    expect(new Planck.DataLoader()).instanceof(Planck.DataLoader)
+    expect(new DataLoader()).instanceof(DataLoader)
   })
 
   it('initializes properties', () => {
-    const loader = new Planck.DataLoader()
+    const loader = new DataLoader()
     expect(loader.url).equal(null)
     expect(loader.size).equal(0)
     expect(loader.progress).equal(0)
@@ -53,13 +66,13 @@ describe('DataLoader', () => {
   })
 
   it('rejects loading when url is not set', () => {
-    const loader = new Planck.DataLoader()
+    const loader = new DataLoader()
     return expect(loader.load()).rejected
   })
 
   it('resolves a request', () => {
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.DataLoader('data')
+    const loader = new DataLoader('data')
     const promise = expect(loader.load()).fulfilled.then(request => {
       expect(request).instanceof(XMLHttpRequest)
     })
@@ -68,7 +81,7 @@ describe('DataLoader', () => {
 
   it('rejects with a status code', () => {
     server.respondWith('GET', /.*/, [500, {}, ''])
-    const loader = new Planck.DataLoader('data/null')
+    const loader = new DataLoader('data/null')
     const promise = expect(loader.load()).rejected.then(error => {
       expect(error).equal(500)
     })
@@ -77,7 +90,7 @@ describe('DataLoader', () => {
 
   it('stores the requested url', () => {
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.DataLoader('data')
+    const loader = new DataLoader('data')
     return expect(loader.load()).fulfilled.then(request => {
       expect(loader.url).equal('data')
     })
@@ -86,8 +99,8 @@ describe('DataLoader', () => {
   it('marks completed or failed after loading', () => {
     server.respondWith('GET', 'data/200', [200, {}, ''])
     server.respondWith('GET', 'data/404', [404, {}, ''])
-    const loader1 = new Planck.DataLoader('data/200')
-    const loader2 = new Planck.DataLoader('data/404')
+    const loader1 = new DataLoader('data/200')
+    const loader2 = new DataLoader('data/404')
     return Promise.all([
       expect(loader1.load()).fulfilled.then(() => {
         expect(loader1.completed).equal(true)
@@ -102,7 +115,7 @@ describe('DataLoader', () => {
 
   it('dispatches a size event while loading', () => {
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.DataLoader('data')
+    const loader = new DataLoader('data')
     const spy = sinon.spy()
     loader.addEventListener('size', event => {
       spy(event.target.size)
@@ -114,7 +127,7 @@ describe('DataLoader', () => {
 
   it('dispatches a determinate event while loading', () => {
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.DataLoader('data')
+    const loader = new DataLoader('data')
     const spy = sinon.spy()
     loader.addEventListener('determinate', event => {
       spy(event.target.determinate)
@@ -126,7 +139,7 @@ describe('DataLoader', () => {
 
   it('dispatches at least one progress event while loading', () => {
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.DataLoader('data')
+    const loader = new DataLoader('data')
     const spy = sinon.spy()
     loader.addEventListener('progress', event => {
       spy(event.target.progress)
@@ -140,8 +153,8 @@ describe('DataLoader', () => {
   it('dispatches a completed or failed event while loading', () => {
     server.respondWith('GET', 'data/200', [200, {}, ''])
     server.respondWith('GET', 'data/404', [404, {}, ''])
-    const loader1 = new Planck.DataLoader('data/200')
-    const loader2 = new Planck.DataLoader('data/404')
+    const loader1 = new DataLoader('data/200')
+    const loader2 = new DataLoader('data/404')
     const completionSpy1 = sinon.spy()
     const failureSpy1 = sinon.spy()
     const completionSpy2 = sinon.spy()
@@ -172,7 +185,7 @@ describe('DataLoader', () => {
 
   it('supports explicit size override', () => {
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.DataLoader({ url: 'data', size: 1024 })
+    const loader = new DataLoader({ url: 'data', size: 1024 })
     expect(loader.size).equal(1024)
     return expect(loader.load()).fulfilled
   })
@@ -180,7 +193,7 @@ describe('DataLoader', () => {
   it('supports aborting', () => {
     server.autoRespond = false
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.DataLoader('data')
+    const loader = new DataLoader('data')
     const completionSpy = sinon.spy()
     const failureSpy = sinon.spy()
     loader.addEventListener('completed', event => {

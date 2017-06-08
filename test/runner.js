@@ -1,7 +1,7 @@
 //
 //  The MIT License
 //
-//  Copyright (C) 2017-Present Shota Matsuda
+//  Copyright (C) 2016-Present Shota Matsuda
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -22,8 +22,33 @@
 //  DEALINGS IN THE SOFTWARE.
 //
 
-import './runner'
+import mocha from 'mocha'
 
-import './loader/DataLoader'
-import './loader/Loader'
-import './loader/ScriptLoader'
+mocha.setup('bdd')
+
+window.addEventListener('load', event => {
+  const runner = mocha.run()
+  const results = []
+
+  runner.on('end', () => {
+    window.mochaResults = runner.stats
+    window.mochaResults.reports = results
+  })
+
+  runner.on('fail', (test, error) => {
+    const titles = []
+    let current = test
+    while (current.parent.title) {
+      titles.push(current.parent.title)
+      current = current.parent
+    }
+    titles.reverse()
+    results.push({
+      name: test.title,
+      results: false,
+      message: error.message,
+      stack: error.stack,
+      titles,
+    })
+  })
+}, false)
