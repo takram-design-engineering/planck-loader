@@ -22,13 +22,21 @@
 //  DEALINGS IN THE SOFTWARE.
 //
 
-describe('ScriptLoader', () => {
+import chai from 'chai'
+
+import { ScriptLoader } from '../..'
+
+const expect = chai.expect
+
+describe('ScriptLoader', function () {
+  this.timeout(30000)
+
   it('supports instanceof', () => {
-    expect(new Planck.ScriptLoader()).instanceof(Planck.ScriptLoader)
+    expect(new ScriptLoader()).instanceof(ScriptLoader)
   })
 
   it('loads script', () => {
-    const loader = new Planck.ScriptLoader('data/script.js')
+    const loader = new ScriptLoader('/test/loader/data/script')
     expect(self.planck_script_loader_test_flag).undefined
     return expect(loader.load()).fulfilled.then(() => {
       expect(self.planck_script_loader_test_flag).not.undefined

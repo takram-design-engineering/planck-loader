@@ -1,7 +1,7 @@
 //
 //  The MIT License
 //
-//  Copyright (C) 2017-Present Shota Matsuda
+//  Copyright (C) 2016-Present Shota Matsuda
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -22,8 +22,29 @@
 //  DEALINGS IN THE SOFTWARE.
 //
 
-import './runner'
+import babel from 'rollup-plugin-babel'
+import commonjs from 'rollup-plugin-commonjs'
+import nodeResolve from 'rollup-plugin-node-resolve'
 
-import './loader/DataLoader'
-import './loader/Loader'
-import './loader/ScriptLoader'
+export default {
+  entry: './src/main.js',
+  plugins: [
+    nodeResolve({ main: true, module: true, browser: true }),
+    commonjs(),
+    babel({
+      presets: [
+        'es2017',
+        'stage-3',
+      ],
+      plugins: [
+        'external-helpers',
+      ],
+    }),
+  ],
+  targets: [
+    {
+      format: 'es',
+      dest: './build/planck-loader.module.js',
+    },
+  ],
+}

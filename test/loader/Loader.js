@@ -22,6 +22,17 @@
 //  DEALINGS IN THE SOFTWARE.
 //
 
+import chai from 'chai'
+import chaiAsPromised from 'chai-as-promised'
+import sinon from 'sinon'
+import sinonChai from 'sinon-chai'
+
+import { Loader } from '../..'
+
+const expect = chai.expect
+chai.use(chaiAsPromised)
+chai.use(sinonChai)
+
 describe('Loader', () => {
   let server = null
 
@@ -39,11 +50,11 @@ describe('Loader', () => {
   })
 
   it('supports instanceof', () => {
-    expect(new Planck.Loader()).instanceof(Planck.Loader)
+    expect(new Loader()).instanceof(Loader)
   })
 
   it('initializes properties', () => {
-    const loader = new Planck.Loader()
+    const loader = new Loader()
     expect(loader.size).equal(0)
     expect(loader.progress).equal(0)
     expect(loader.determinate).equal(false)
@@ -52,13 +63,13 @@ describe('Loader', () => {
   })
 
   it('rejects loading when url is not set', () => {
-    const loader = new Planck.Loader()
+    const loader = new Loader()
     return expect(loader.load()).rejected
   })
 
   it('resolves requests', () => {
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.Loader(['data', 'data'])
+    const loader = new Loader(['data', 'data'])
     return expect(loader.load()).fulfilled.then(requests => {
       expect(requests.length).equal(2)
       expect(requests[0]).instanceof(XMLHttpRequest)
@@ -69,7 +80,7 @@ describe('Loader', () => {
   it('rejects with a status code', () => {
     server.respondWith('GET', 'data/200', [200, {}, ''])
     server.respondWith('GET', 'data/404', [404, {}, ''])
-    const loader = new Planck.Loader(['data/200', 'data/404'])
+    const loader = new Loader(['data/200', 'data/404'])
     return expect(loader.load()).rejected.then(error => {
       expect(error).equal(404)
     })
@@ -78,7 +89,7 @@ describe('Loader', () => {
   it('stores the requested loaders', () => {
     server.respondWith('GET', 'data/1', [200, {}, ''])
     server.respondWith('GET', 'data/2', [200, {}, ''])
-    const loader = new Planck.Loader(['data/1', 'data/2'])
+    const loader = new Loader(['data/1', 'data/2'])
     return expect(loader.load()).fulfilled.then(request => {
       expect(loader.loaders.length).equal(2)
       expect(loader.loaders[0].url).equal('data/1')
@@ -89,8 +100,8 @@ describe('Loader', () => {
   it('marks completed or failed after loading', () => {
     server.respondWith('GET', 'data/200', [200, {}, ''])
     server.respondWith('GET', 'data/404', [404, {}, ''])
-    const loader1 = new Planck.Loader(['data/200', 'data/200'])
-    const loader2 = new Planck.Loader(['data/200', 'data/404'])
+    const loader1 = new Loader(['data/200', 'data/200'])
+    const loader2 = new Loader(['data/200', 'data/404'])
     return Promise.all([
       expect(loader1.load()).fulfilled.then(() => {
         expect(loader1.completed).equal(true)
@@ -105,7 +116,7 @@ describe('Loader', () => {
 
   it('dispatches at least one size event while loading', () => {
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.Loader(['data', 'data'])
+    const loader = new Loader(['data', 'data'])
     const spy = sinon.spy()
     loader.addEventListener('size', event => {
       spy(event.target.size)
@@ -117,7 +128,7 @@ describe('Loader', () => {
 
   it('dispatches a determinate event while loading', () => {
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.Loader(['data', 'data'])
+    const loader = new Loader(['data', 'data'])
     const spy = sinon.spy()
     loader.addEventListener('determinate', event => {
       spy(event.target.determinate)
@@ -129,7 +140,7 @@ describe('Loader', () => {
 
   it('dispatches at least one progress event while loading', () => {
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.Loader(['data', 'data'])
+    const loader = new Loader(['data', 'data'])
     const spy = sinon.spy()
     loader.addEventListener('progress', event => {
       spy(event.target.progress)
@@ -143,8 +154,8 @@ describe('Loader', () => {
   it('dispatches a completed or failed event while loading', () => {
     server.respondWith('GET', 'data/200', [200, {}, ''])
     server.respondWith('GET', 'data/404', [404, {}, ''])
-    const loader1 = new Planck.Loader(['data/200', 'data/200'])
-    const loader2 = new Planck.Loader(['data/200', 'data/404'])
+    const loader1 = new Loader(['data/200', 'data/200'])
+    const loader2 = new Loader(['data/200', 'data/404'])
     const completionSpy1 = sinon.spy()
     const failureSpy1 = sinon.spy()
     const completionSpy2 = sinon.spy()
@@ -175,7 +186,7 @@ describe('Loader', () => {
 
   it('supports explicit size override', () => {
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.Loader([
+    const loader = new Loader([
       'data',
       { url: 'data', size: 1024 },
     ])
@@ -186,7 +197,7 @@ describe('Loader', () => {
   it('supports aborting', () => {
     server.autoRespond = false
     server.respondWith('GET', 'data', [200, {}, ''])
-    const loader = new Planck.Loader(['data', 'data'])
+    const loader = new Loader(['data', 'data'])
     const completionSpy = sinon.spy()
     const failureSpy = sinon.spy()
     loader.addEventListener('completed', event => {
@@ -215,7 +226,7 @@ describe('Loader', () => {
       request.respond(200, {}, '')
       setTimeout(() => server.respond())
     })
-    const loader = new Planck.Loader(
+    const loader = new Loader(
       'data/1',
       'data/2',
       'data/3')
@@ -239,7 +250,7 @@ describe('Loader', () => {
 
   it('loads parallelly', () => {
     server.autoRespond = false
-    const loader = new Planck.Loader([
+    const loader = new Loader([
       'data/3',
       'data/2',
       'data/1',
@@ -299,7 +310,7 @@ describe('Loader', () => {
         })
       }
     })
-    const loader = new Planck.Loader(
+    const loader = new Loader(
       'data/1',
       ['data/3', 'data/2'],
       'data/4',

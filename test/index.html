@@ -1,7 +1,7 @@
 <!--
   The MIT License
 
-  Copyright (C) 2017-Present Shota Matsuda
+  Copyright (C) 2016-Present Shota Matsuda
 
   Permission is hereby granted, free of charge, to any person obtaining a
   copy of this software and associated documentation files (the "Software"),
@@ -26,30 +26,16 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <link rel="stylesheet" href="mocha.css">
+    <link rel="stylesheet" href="../node_modules/mocha/mocha.css">
     <link rel="shortcut icon" href="">
   </head>
   <body>
     <div id="mocha"></div>
-
-    <!-- Target scripts -->
-    <script src="planck-loader.js"></script>
-
-    <!-- Setup tests -->
-    <script src="mocha.js"></script>
-    <script src="chai.js"></script>
-    <script src="sinon.js"></script>
-    <script src="sinon-chai.js"></script>
-    <script src="test.js"></script>
-
-    <!-- Tests -->
-    <script src="loader/DataLoader.js"></script>
-    <script src="loader/Loader.js"></script>
-    <script src="loader/ScriptLoader.js"></script>
-
-    <!-- Run tests -->
-    <script>
-      mocha.run()
-    </script>
+    <script src="../node_modules/babel-polyfill/dist/polyfill.js"></script>
+    <script src="../node_modules/mocha/mocha.js"></script>
+    <script src="../node_modules/chai/chai.js"></script>
+    <script src="../node_modules/sinon/pkg/sinon.js"></script>
+    <script src="../build/planck-loader.js"></script>
+    <script src="../build/test.js"></script>
   </body>
 </html>
