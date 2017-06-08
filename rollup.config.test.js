@@ -27,6 +27,8 @@ import babel from 'rollup-plugin-babel'
 import commonjs from 'rollup-plugin-commonjs'
 import nodeResolve from 'rollup-plugin-node-resolve'
 
+const pkg = require('./package.json')
+
 export default {
   entry: './test/test.js',
   sourceMap: true,
@@ -47,13 +49,13 @@ export default {
     }),
   ],
   external: [
-    path.resolve('build/planck-loader.module.js'),
+    path.resolve(pkg.module),
     'mocha',
     'chai',
     'sinon',
   ],
   globals: {
-    [path.resolve('build/planck-loader.module.js')]: 'Planck',
+    [path.resolve(pkg.module)]: 'Planck',
     'mocha': 'mocha',
     'chai': 'chai',
     'sinon': 'sinon',
