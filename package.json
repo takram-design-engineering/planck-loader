@@ -23,7 +23,6 @@
     "precompress": "npm run build",
     "compress": "uglifyjs build/planck-loader.js -cm > build/planck-loader.min.js",
     "lint": "eslint src test",
-    "pretest": "npm run build",
     "pretest": "npm run build && rollup -c rollup.config.test.js",
     "test": "mocha test/saucelabs.js"
   },
