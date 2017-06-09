@@ -1,5 +1,5 @@
 {
-  "name": "planck-loader",
+  "name": "@takram/planck-loader",
   "version": "0.1.7",
   "description": "",
   "repository": "takram-design-engineering/planck-loader",
@@ -20,18 +20,20 @@
     "build": "npm run build:main & npm run build:module",
     "build:main": "rollup -c",
     "build:module": "rollup -c rollup.config.module.js",
+    "build:test": "rollup -c rollup.config.test.js",
     "precompress": "npm run build",
     "compress": "uglifyjs build/planck-loader.js -cm > build/planck-loader.min.js",
     "lint": "eslint src test",
-    "pretest": "npm run build && rollup -c rollup.config.test.js",
+    "pretest": "npm run build && npm run build:test",
     "test": "mocha test/saucelabs.js"
   },
   "dependencies": {
-    "babel-polyfill": "^6.23.0",
-    "planck-core": "github:takram-design-engineering/planck-core",
-    "planck-event": "github:takram-design-engineering/planck-event"
+    "@takram/planck-core": "^0.1.10",
+    "@takram/planck-event": "^0.1.7",
+    "babel-polyfill": "^6.23.0"
   },
   "devDependencies": {
+    "@takram/eslint-config-planck": "^0.1.7",
     "babel-core": "^6.24.1",
     "babel-plugin-external-helpers": "^6.22.0",
     "babel-preset-env": "^1.5.1",
@@ -43,7 +45,6 @@
     "chai-as-promised": "^6.0.0",
     "chalk": "^1.1.3",
     "eslint": "^3.19.0",
-    "eslint-config-planck": "github:takram-design-engineering/eslint-config-planck",
     "express": "^4.15.3",
     "localtunnel": "^1.8.2",
     "mocha": "^3.2.0",

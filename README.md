@@ -4,7 +4,9 @@ Planck Loader
 Provides for parallel and sequential data loading and progress observation.
 
 [![License](http://img.shields.io/badge/license-MIT-lightgrey.svg?style=flat
-)](http://mit-license.org) [![Sauce Test Status](https://saucelabs.com/buildstatus/planck-loader)](https://saucelabs.com/u/planck-loader)
+)](http://mit-license.org)
+[![npm version](https://badge.fury.io/js/%40takram%2Fplanck-loader.svg)](http://badge.fury.io/js/%40takram%2Fplanck-loader)
+[![Sauce Test Status](https://saucelabs.com/buildstatus/planck-loader)](https://saucelabs.com/u/planck-loader)
 
 [![Sauce Test Status](https://saucelabs.com/browser-matrix/planck-loader.svg)](https://saucelabs.com/u/planck-loader)
 
@@ -15,7 +17,7 @@ Provides for parallel and sequential data loading and progress observation.
 The example below will load `data1.json`, `data2.json` and `lib.js` in parallel (in a JavaScript sense), whereas `main.js` will be loaded after loading `lib.js`.
 
 ```js
-import { Loader } from 'planck-loader'
+import { Loader } from '@takram/planck-loader'
 
 const progressBar = document.querySelector('#progress-bar')
 
@@ -47,7 +49,7 @@ loader.load().then(requests => {
 ### Installing
 
 ```sh
-npm install --save github:takram-design-engineering/planck-loader
+npm install --save @takram/planck-loader
 ```
 
 ## API Reference
