@@ -33,7 +33,6 @@ const expect = chai.expect
 chai.use(chaiAsPromised)
 chai.use(sinonChai)
 
-// eslint-disable-next-line func-names
 describe('DataLoader', () => {
   let server = null
 
