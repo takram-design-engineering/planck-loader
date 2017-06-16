@@ -25,7 +25,7 @@
     "compress": "uglifyjs build/planck-loader.js -cm > build/planck-loader.min.js",
     "lint": "eslint src test",
     "pretest": "npm run build; npm run build:test",
-    "test": "npm run lint && mocha --recursive test/unit test/saucelabs.js",
+    "test": "npm run lint && mocha --recursive test/setup.js",
     "pretest:local": "npm run build",
     "test:local": "mocha --recursive test/unit"
   },
