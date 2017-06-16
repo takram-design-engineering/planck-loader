@@ -5,7 +5,7 @@ Provides for parallel and sequential data loading and progress observation.
 
 [![License](http://img.shields.io/badge/license-MIT-lightgrey.svg?style=flat
 )](http://mit-license.org)
-[![npm version](https://badge.fury.io/js/%40takram%2Fplanck-loader.svg)](http://badge.fury.io/js/%40takram%2Fplanck-loader)
+[![npm version](https://badge.fury.io/js/%40takram%2Fplanck-loader.svg)](http://badge.fury.io/js/%40takram%2Fplanck-loader)[![Build Status](https://travis-ci.org/takram-design-engineering/planck-loader.svg?branch=master)](https://travis-ci.org/takram-design-engineering/planck-loader)
 [![Sauce Test Status](https://saucelabs.com/buildstatus/planck-loader)](https://saucelabs.com/u/planck-loader)
 
 [![Sauce Test Status](https://saucelabs.com/browser-matrix/planck-loader.svg)](https://saucelabs.com/u/planck-loader)
