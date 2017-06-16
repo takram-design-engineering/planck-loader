@@ -28,6 +28,7 @@ import { ScriptLoader } from '../..'
 
 const expect = chai.expect
 
+// eslint-disable-next-line func-names
 describe('ScriptLoader', function () {
   this.timeout(30000)
 
