@@ -28,6 +28,7 @@ import { ScriptLoader } from '../..'
 
 const expect = chai.expect
 
+// eslint-disable-next-line func-names
 describe('ScriptLoader', function () {
   this.timeout(30000)
 
@@ -36,7 +37,7 @@ describe('ScriptLoader', function () {
   })
 
   it('loads script', () => {
-    const loader = new ScriptLoader('/test/loader/data/script')
+    const loader = new ScriptLoader('/test/unit/data/script')
     expect(self.planck_script_loader_test_flag).undefined
     return expect(loader.load()).fulfilled.then(() => {
       expect(self.planck_script_loader_test_flag).not.undefined

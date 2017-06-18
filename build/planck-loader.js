@@ -377,6 +377,8 @@ var FilePath = function () {
 
 internal$3(FilePath).self = FilePath.current;
 
+var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
 function createCommonjsModule(fn, module) {
   return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
@@ -1088,6 +1090,57 @@ if (Environment.type === 'node') {
   }
 }
 
+// Unique ID creation requires a high quality random # generator.  In the
+// browser this is a little complicated due to unknown quality of Math.random()
+// and inconsistent support for the `crypto` API.  We do the best we can via
+// feature-detection
+var rng;
+
+var crypto = commonjsGlobal.crypto || commonjsGlobal.msCrypto; // for IE 11
+if (crypto && crypto.getRandomValues) {
+  // WHATWG crypto RNG - http://wiki.whatwg.org/wiki/Crypto
+  var rnds8 = new Uint8Array(16); // eslint-disable-line no-undef
+  rng = function whatwgRNG() {
+    crypto.getRandomValues(rnds8);
+    return rnds8;
+  };
+}
+
+if (!rng) {
+  // Math.random()-based (RNG)
+  //
+  // If all else fails, use Math.random().  It's fast, but is of unspecified
+  // quality.
+  var rnds = new Array(16);
+  rng = function rng() {
+    for (var i = 0, r; i < 16; i++) {
+      if ((i & 0x03) === 0) r = Math.random() * 0x100000000;
+      rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return rnds;
+  };
+}
+
+var rngBrowser = rng;
+
+/**
+ * Convert array of 16 byte values to UUID string format of the form:
+ * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+ */
+var byteToHex = [];
+for (var i = 0; i < 256; ++i) {
+  byteToHex[i] = (i + 0x100).toString(16).substr(1);
+}
+
+// **`v1()` - Generate time-based UUID**
+//
+// Inspired by https://github.com/LiosK/UUID.js
+// and http://docs.python.org/library/uuid.html
+
+// random #'s we need to init node and clockseq
+var _seedBytes = rngBrowser();
+
 //
 //  The MIT License
 //
@@ -1112,7 +1165,7 @@ if (Environment.type === 'node') {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$1 = Namespace('Event');
+var internal$3$1 = Namespace('Event');
 
 var Event = function () {
   function Event() {
@@ -1128,11 +1181,11 @@ var Event = function () {
       var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
           type = _ref2.type,
           _ref2$captures = _ref2.captures,
-          captures = _ref2$captures === undefined ? true : _ref2$captures,
+          captures = _ref2$captures === undefined ? false : _ref2$captures,
           _ref2$bubbles = _ref2.bubbles,
-          bubbles = _ref2$bubbles === undefined ? false : _ref2$bubbles;
+          bubbles = _ref2$bubbles === undefined ? true : _ref2$bubbles;
 
-      var scope = internal$1(this);
+      var scope = internal$3$1(this);
       scope.type = type || null;
       scope.captures = !!captures;
       scope.bubbles = !!bubbles;
@@ -1147,68 +1200,68 @@ var Event = function () {
   }, {
     key: 'stopPropagation',
     value: function stopPropagation() {
-      var scope = internal$1(this);
+      var scope = internal$3$1(this);
       scope.propagationStopped = true;
     }
   }, {
     key: 'stopImmediatePropagation',
     value: function stopImmediatePropagation() {
-      var scope = internal$1(this);
+      var scope = internal$3$1(this);
       scope.propagationStopped = true;
       scope.immediatePropagationStopped = true;
     }
   }, {
     key: 'type',
     get: function get$$1() {
-      var scope = internal$1(this);
+      var scope = internal$3$1(this);
       return scope.type;
     }
   }, {
     key: 'target',
     get: function get$$1() {
-      var scope = internal$1(this);
+      var scope = internal$3$1(this);
       return scope.target;
     }
   }, {
     key: 'currentTarget',
     get: function get$$1() {
-      var scope = internal$1(this);
+      var scope = internal$3$1(this);
       return scope.currentTarget;
     }
   }, {
     key: 'phase',
     get: function get$$1() {
-      var scope = internal$1(this);
+      var scope = internal$3$1(this);
       return scope.phase;
     }
   }, {
     key: 'captures',
     get: function get$$1() {
-      var scope = internal$1(this);
+      var scope = internal$3$1(this);
       return scope.captures;
     }
   }, {
     key: 'bubbles',
     get: function get$$1() {
-      var scope = internal$1(this);
+      var scope = internal$3$1(this);
       return scope.bubbles;
     }
   }, {
     key: 'timestamp',
     get: function get$$1() {
-      var scope = internal$1(this);
+      var scope = internal$3$1(this);
       return scope.timestamp;
     }
   }, {
     key: 'propagationStopped',
     get: function get$$1() {
-      var scope = internal$1(this);
+      var scope = internal$3$1(this);
       return scope.propagationStopped;
     }
   }, {
     key: 'immediatePropagationStopped',
     get: function get$$1() {
-      var scope = internal$1(this);
+      var scope = internal$3$1(this);
       return scope.immediatePropagationStopped;
     }
   }]);
@@ -1216,7 +1269,7 @@ var Event = function () {
 }();
 
 function modifyEvent(event) {
-  var scope = internal$1(event);
+  var scope = internal$3$1(event);
   return {
     set target(value) {
       scope.target = value || null;
@@ -1300,8 +1353,9 @@ var CustomEvent = function (_Event) {
           rest = objectWithoutProperties(_ref, ['type', 'target']);
 
 
-      get(CustomEvent.prototype.__proto__ || Object.getPrototypeOf(CustomEvent.prototype), 'init', this).call(this, _extends({ type: type }, rest));
-      modifyEvent(this).target = target;
+      get(CustomEvent.prototype.__proto__ || Object.getPrototypeOf(CustomEvent.prototype), 'init', this).call(this, _extends({ type: type }, rest
+      // Support target as a parameter
+      ));modifyEvent(this).target = target || null;
       return this;
     }
   }]);
@@ -1332,7 +1386,376 @@ var CustomEvent = function (_Event) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$1$1 = Namespace('EventBundle');
+var internal$2 = Namespace('StateEvent');
+
+var StateEvent = function (_CustomEvent) {
+  inherits(StateEvent, _CustomEvent);
+
+  function StateEvent() {
+    classCallCheck(this, StateEvent);
+    return possibleConstructorReturn(this, (StateEvent.__proto__ || Object.getPrototypeOf(StateEvent)).apply(this, arguments));
+  }
+
+  createClass(StateEvent, [{
+    key: 'init',
+    value: function init() {
+      var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+      var name = _ref.name,
+          value = _ref.value,
+          rest = objectWithoutProperties(_ref, ['name', 'value']);
+
+
+      get(StateEvent.prototype.__proto__ || Object.getPrototypeOf(StateEvent.prototype), 'init', this).call(this, _extends({}, rest, { type: StateEvent.type(name) }));
+      var scope = internal$2(this);
+      scope.name = name;
+      scope.value = value;
+      return this;
+    }
+  }, {
+    key: 'name',
+    get: function get$$1() {
+      var scope = internal$2(this);
+      return scope.name;
+    }
+  }, {
+    key: 'value',
+    get: function get$$1() {
+      var scope = internal$2(this);
+      return scope.value;
+    }
+  }], [{
+    key: 'type',
+    value: function type(name) {
+      return 'state:' + (name === null || name === undefined ? '' : name);
+    }
+  }]);
+  return StateEvent;
+}(CustomEvent);
+
+//
+//  The MIT License
+//
+//  Copyright (C) 2016-Present Shota Matsuda
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a
+//  copy of this software and associated documentation files (the "Software"),
+//  to deal in the Software without restriction, including without limitation
+//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//  and/or sell copies of the Software, and to permit persons to whom the
+//  Software is furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//  DEALINGS IN THE SOFTWARE.
+//
+
+var internal$1 = Namespace('Binder');
+
+function isTargetSame(target, other) {
+  return other.object === target.object && other.name === target.name;
+}
+
+function handleChange(transform, event) {
+  var scope = internal$1(this);
+  if (event.target === scope.source && event.name === scope.name) {
+    var _value = transform(event.value);
+    scope.targets.forEach(function (target) {
+      target.object[target.name] = _value;
+    });
+  }
+}
+
+function dispose(binder) {
+  var scope = internal$1(binder);
+  var type = StateEvent.type(scope.name);
+  scope.source.removeEventListener(type, scope.handleChange, false);
+}
+
+var Binder = function () {
+  function Binder(source, name, targets) {
+    var _ref3 = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {},
+        _ref3$assigns = _ref3.assigns,
+        assigns = _ref3$assigns === undefined ? false : _ref3$assigns,
+        _ref3$transform = _ref3.transform,
+        transform = _ref3$transform === undefined ? function (value) {
+      return value;
+    } : _ref3$transform;
+
+    classCallCheck(this, Binder);
+
+    var scope = internal$1(this);
+    scope.source = source;
+    scope.name = name;
+    scope.targets = [].concat(toConsumableArray(targets));
+    scope.handleChange = handleChange.bind(this, transform
+
+    // Listen for state events with the given name
+    );var type = StateEvent.type(name);
+    scope.source.addEventListener(type, scope.handleChange, false
+
+    // Initial assignment
+    );if (assigns) {
+      targets.forEach(function (target) {
+        target.object[target.name] = transform(source[name]);
+      });
+    }
+  }
+
+  createClass(Binder, [{
+    key: 'matches',
+    value: function matches(targets) {
+      var scope = internal$1(this);
+      if (!Array.isArray(targets) || targets.length === 0) {
+        return false;
+      }
+      return targets.every(function (other) {
+        return scope.targets.some(function (target) {
+          return isTargetSame(target, other);
+        });
+      });
+    }
+  }, {
+    key: 'unbind',
+    value: function unbind(targets) {
+      if (!targets) {
+        return this.unbindAll();
+      }
+      var scope = internal$1(this);
+      var unboundTargets = targets.reduce(function (result, target) {
+        var index = scope.targets.findIndex(function (other) {
+          return isTargetSame(target, other);
+        });
+        if (index !== -1) {
+          scope.targets.splice(index, 1);
+          result.push(target);
+        }
+        return result;
+      }, []);
+      if (scope.targets.length === 0) {
+        dispose(this);
+      }
+      return unboundTargets;
+    }
+  }, {
+    key: 'unbindAll',
+    value: function unbindAll() {
+      var scope = internal$1(this);
+      var unboundTargets = scope.targets;
+      scope.targets = [];
+      dispose(this);
+      return unboundTargets;
+    }
+  }, {
+    key: 'empty',
+    get: function get$$1() {
+      var scope = internal$1(this);
+      return scope.targets.length === 0;
+    }
+  }]);
+  return Binder;
+}();
+
+//
+//  The MIT License
+//
+//  Copyright (C) 2016-Present Shota Matsuda
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a
+//  copy of this software and associated documentation files (the "Software"),
+//  to deal in the Software without restriction, including without limitation
+//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//  and/or sell copies of the Software, and to permit persons to whom the
+//  Software is furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//  DEALINGS IN THE SOFTWARE.
+//
+
+var internal$4$1 = Namespace('Binding');
+
+function formatTargets() {
+  for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+    args[_key] = arguments[_key];
+  }
+
+  // Flatten arguments
+  var flatArgs = args.reduce(function (targets, value) {
+    return targets.concat(value);
+  }, []
+
+  // Convert the array from [object, name, ...] to [{ object, name }, ...]
+  );var object = void 0;
+  var targets = flatArgs.reduce(function (targets, value, index) {
+    if (index % 2 === 0) {
+      object = value;
+    } else {
+      targets.push({ object: object, name: value });
+    }
+    return targets;
+  }, []
+
+  // Defaults to one-way binding for multiple targets
+  );var options = Object.assign({
+    oneWay: targets.length > 1
+  }, flatArgs[targets.length * 2]);
+  return [targets, options];
+}
+
+function _bind(source, name, targets, options) {
+  var scope = internal$4$1(source);
+  if (scope.bindings === undefined) {
+    scope.bindings = {};
+  }
+  if (scope.bindings[name] === undefined) {
+    scope.bindings[name] = [];
+  }
+  var binders = scope.bindings[name];
+  binders.forEach(function (binder) {
+    binder.unbind(targets);
+  });
+  binders = binders.filter(function (binder) {
+    return !binder.empty;
+  });
+  binders.push(new Binder(source, name, targets, options));
+  scope.bindings[name] = binders;
+}
+
+function _unbind(source, name, targets) {
+  var scope = internal$4$1(source);
+  if (scope.bindings === undefined) {
+    return [];
+  }
+  if (scope.bindings[name] === undefined) {
+    return [];
+  }
+  var binders = scope.bindings[name];
+  var unboundTargets = binders.reduce(function (result, binder) {
+    return result.concat(binder.unbind(targets));
+  }, []);
+  binders = binders.filter(function (binder) {
+    return !binder.empty;
+  });
+  scope.bindings[name] = binders;
+  return unboundTargets;
+}
+
+function _unbindAll(source, name) {
+  var scope = internal$4$1(source);
+  if (scope.bindings === undefined) {
+    return [];
+  }
+  if (scope.bindings[name] === undefined) {
+    return [];
+  }
+  var binders = scope.bindings[name];
+  var unboundTargets = binders.reduce(function (result, binder) {
+    return result.concat(binder.unbindAll());
+  }, []);
+  scope.bindings[name] = [];
+  return unboundTargets;
+}
+
+var Binding = function () {
+  function Binding() {
+    classCallCheck(this, Binding);
+  }
+
+  createClass(Binding, null, [{
+    key: 'bind',
+    value: function bind(source, name) {
+      for (var _len2 = arguments.length, rest = Array(_len2 > 2 ? _len2 - 2 : 0), _key2 = 2; _key2 < _len2; _key2++) {
+        rest[_key2 - 2] = arguments[_key2];
+      }
+
+      var _formatTargets = formatTargets.apply(undefined, rest),
+          _formatTargets2 = slicedToArray(_formatTargets, 2),
+          targets = _formatTargets2[0],
+          options = _formatTargets2[1];
+
+      if (!options.oneWay) {
+        targets.forEach(function (target) {
+          _bind(target.object, target.name, [{ object: source, name: name }], {
+            assigns: false,
+            transform: options.inverseTransform
+          });
+        });
+      }
+      _bind(source, name, targets, {
+        assigns: true,
+        transform: options.transform
+      });
+    }
+  }, {
+    key: 'unbind',
+    value: function unbind(source, name) {
+      for (var _len3 = arguments.length, rest = Array(_len3 > 2 ? _len3 - 2 : 0), _key3 = 2; _key3 < _len3; _key3++) {
+        rest[_key3 - 2] = arguments[_key3];
+      }
+
+      var _formatTargets3 = formatTargets.apply(undefined, rest),
+          _formatTargets4 = slicedToArray(_formatTargets3, 2),
+          targets = _formatTargets4[0],
+          options = _formatTargets4[1];
+
+      var unboundTargets = _unbind(source, name, targets);
+      if (!options.oneWay) {
+        unboundTargets.forEach(function (target) {
+          _unbind(target.object, target.name, [{ object: source, name: name }]);
+        });
+      }
+    }
+  }, {
+    key: 'unbindAll',
+    value: function unbindAll(source, name) {
+      _unbindAll(source, name).forEach(function (target) {
+        _unbindAll(target.object, target.name, [{ object: source, name: name }]);
+      });
+    }
+  }]);
+  return Binding;
+}();
+
+//
+//  The MIT License
+//
+//  Copyright (C) 2016-Present Shota Matsuda
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a
+//  copy of this software and associated documentation files (the "Software"),
+//  to deal in the Software without restriction, including without limitation
+//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//  and/or sell copies of the Software, and to permit persons to whom the
+//  Software is furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//  DEALINGS IN THE SOFTWARE.
+//
+
+var internal$5 = Namespace('EventBundle');
 
 var EventBundle = function (_Event2) {
   inherits(EventBundle, _Event2);
@@ -1352,14 +1775,14 @@ var EventBundle = function (_Event2) {
 
 
       get(EventBundle.prototype.__proto__ || Object.getPrototypeOf(EventBundle.prototype), 'init', this).call(this, _extends({}, rest));
-      var scope = internal$1$1(this);
+      var scope = internal$5(this);
       scope.originalEvent = originalEvent || null;
       return this;
     }
   }, {
     key: 'preventDefault',
     value: function preventDefault() {
-      var scope = internal$1$1(this);
+      var scope = internal$5(this);
       if (scope.originalEvent !== null) {
         scope.originalEvent.preventDefault();
       }
@@ -1367,7 +1790,7 @@ var EventBundle = function (_Event2) {
   }, {
     key: 'defaultPrevented',
     get: function get$$1() {
-      var scope = internal$1$1(this);
+      var scope = internal$5(this);
       if (scope.originalEvent === null) {
         return false;
       }
@@ -1376,7 +1799,7 @@ var EventBundle = function (_Event2) {
   }, {
     key: 'originalEvent',
     get: function get$$1() {
-      var scope = internal$1$1(this);
+      var scope = internal$5(this);
       return scope.originalEvent;
     }
   }]);
@@ -1407,8 +1830,8 @@ var EventBundle = function (_Event2) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var GenericEvent = function (_CustomEvent) {
-  inherits(GenericEvent, _CustomEvent);
+var GenericEvent = function (_CustomEvent2) {
+  inherits(GenericEvent, _CustomEvent2);
 
   function GenericEvent() {
     classCallCheck(this, GenericEvent);
@@ -1418,7 +1841,7 @@ var GenericEvent = function (_CustomEvent) {
   createClass(GenericEvent, [{
     key: 'init',
     value: function init() {
-      var _this5 = this;
+      var _this6 = this;
 
       var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -1437,8 +1860,8 @@ var GenericEvent = function (_CustomEvent) {
             property = _entry[0],
             value = _entry[1];
 
-        if (!{}.hasOwnProperty.call(_this5, property)) {
-          _this5[property] = value;
+        if (!{}.hasOwnProperty.call(_this6, property)) {
+          _this6[property] = value;
         } else {
           throw new Error('Name "' + property + '" cannot be used for event property');
         }
@@ -1473,13 +1896,23 @@ var GenericEvent = function (_CustomEvent) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$2 = Namespace('EventDispatcher');
+var internal$6$1 = Namespace('EventDispatcher');
+
+function handleEvent(event, listener) {
+  if (typeof listener === 'function') {
+    listener(event);
+  } else if (typeof listener.handleEvent === 'function') {
+    listener.handleEvent(event);
+  } else {
+    throw new Error('Listener is neither function nor event listener');
+  }
+}
 
 var EventDispatcher = function () {
   function EventDispatcher() {
     classCallCheck(this, EventDispatcher);
 
-    var scope = internal$2(this);
+    var scope = internal$6$1(this);
     scope.listeners = {};
   }
 
@@ -1491,7 +1924,7 @@ var EventDispatcher = function () {
       if (typeof listener !== 'function' && (typeof listener === 'undefined' ? 'undefined' : _typeof(listener)) !== 'object') {
         throw new Error('Attempt to add non-function non-object listener');
       }
-      var scope = internal$2(this);
+      var scope = internal$6$1(this);
       if (scope.listeners[type] === undefined) {
         scope.listeners[type] = { bubble: [], capture: [] };
       }
@@ -1506,7 +1939,7 @@ var EventDispatcher = function () {
     value: function removeEventListener(type, listener) {
       var capture = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
-      var scope = internal$2(this);
+      var scope = internal$6$1(this);
       if (scope.listeners[type] === undefined) {
         return;
       }
@@ -1517,15 +1950,50 @@ var EventDispatcher = function () {
       }
     }
   }, {
+    key: 'on',
+    value: function on() {
+      this.addEventListener.apply(this, arguments);
+      return this;
+    }
+  }, {
+    key: 'off',
+    value: function off() {
+      this.removeEventListener.apply(this, arguments);
+      return this;
+    }
+  }, {
+    key: 'once',
+    value: function once(type, listener) {
+      for (var _len4 = arguments.length, rest = Array(_len4 > 2 ? _len4 - 2 : 0), _key4 = 2; _key4 < _len4; _key4++) {
+        rest[_key4 - 2] = arguments[_key4];
+      }
+
+      var _this7 = this;
+
+      var delegate = function delegate(event) {
+        handleEvent(event, listener);
+        _this7.removeEventListener.apply(_this7, [type, delegate].concat(rest));
+      };
+      this.addEventListener.apply(this, [type, delegate].concat(rest));
+      return this;
+    }
+  }, {
     key: 'dispatchEvent',
     value: function dispatchEvent(object) {
-      var _this6 = this;
-
       var event = object;
       if (!(event instanceof Event)) {
         event = new GenericEvent(object);
       }
-      var scope = internal$2(this);
+      var modifier = modifyEvent(event
+
+      // Set target to this when it's not set
+      );if (!event.target) {
+        modifier.target = this;
+      }
+      // Current target should be always this
+      modifier.currentTarget = this;
+
+      var scope = internal$6$1(this);
       var listeners = scope.listeners[event.type];
       if (listeners === undefined) {
         return;
@@ -1533,13 +2001,7 @@ var EventDispatcher = function () {
       var phase = event.phase;
       if (!phase || phase === 'target' || phase === 'capture') {
         [].concat(toConsumableArray(listeners.capture)).some(function (listener) {
-          if (typeof listener === 'function') {
-            listener.call(_this6, event);
-          } else if (typeof listener.handleEvent === 'function') {
-            listener.handleEvent(event);
-          } else {
-            throw new Error('Listener is neither function nor event listener');
-          }
+          handleEvent(event, listener);
           return event.immediatePropagationStopped;
         });
       }
@@ -1548,11 +2010,7 @@ var EventDispatcher = function () {
       }
       if (!phase || phase === 'target' || phase === 'bubble') {
         [].concat(toConsumableArray(listeners.bubble)).some(function (listener) {
-          if (typeof listener === 'function') {
-            listener.call(_this6, event);
-          } else if (typeof listener.handleEvent === 'function') {
-            listener.handleEvent(event);
-          }
+          handleEvent(event, listener);
           return event.immediatePropagationStopped;
         });
       }
@@ -1585,7 +2043,7 @@ var EventDispatcher = function () {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$3$1 = Namespace('EventTarget');
+var internal$7$1 = Namespace('EventTarget');
 
 var EventTarget = function (_EventDispatcher) {
   inherits(EventTarget, _EventDispatcher);
@@ -1593,12 +2051,12 @@ var EventTarget = function (_EventDispatcher) {
   function EventTarget() {
     classCallCheck(this, EventTarget);
 
-    var _this7 = possibleConstructorReturn(this, (EventTarget.__proto__ || Object.getPrototypeOf(EventTarget)).call(this));
+    var _this8 = possibleConstructorReturn(this, (EventTarget.__proto__ || Object.getPrototypeOf(EventTarget)).call(this));
 
-    var scope = internal$3$1(_this7);
+    var scope = internal$7$1(_this8);
     scope.ancestorEventTarget = null;
     scope.descendantEventTarget = null;
-    return _this7;
+    return _this8;
   }
 
   createClass(EventTarget, [{
@@ -1671,8 +2129,7 @@ var EventTarget = function (_EventDispatcher) {
       ();if (event.captures) {
         modifier.phase = 'capture';
         capturingPath.some(function (object) {
-          modifier.currentTarget = object;
-          event.currentTarget.dispatchImmediateEvent(event);
+          object.dispatchImmediateEvent(event);
           return event.propagationStopped;
         });
       }
@@ -1684,8 +2141,7 @@ var EventTarget = function (_EventDispatcher) {
       // multiple identifiers, typically when picking an instanced geometry.
       if (!Number.isInteger(event.target)) {
         modifier.phase = 'target';
-        modifier.currentTarget = event.target;
-        event.currentTarget.dispatchImmediateEvent(event);
+        event.target.dispatchImmediateEvent(event);
         if (event.propagationStopped) {
           return;
         }
@@ -1695,8 +2151,7 @@ var EventTarget = function (_EventDispatcher) {
       if (event.bubbles) {
         modifier.phase = 'bubble';
         bubblingPath.some(function (object) {
-          modifier.currentTarget = object;
-          event.currentTarget.dispatchImmediateEvent(event);
+          object.dispatchImmediateEvent(event);
           return event.propagationStopped;
         });
       }
@@ -1704,21 +2159,21 @@ var EventTarget = function (_EventDispatcher) {
   }, {
     key: 'ancestorEventTarget',
     get: function get$$1() {
-      var scope = internal$3$1(this);
+      var scope = internal$7$1(this);
       return scope.ancestorEventTarget;
     },
     set: function set$$1(value) {
-      var scope = internal$3$1(this);
+      var scope = internal$7$1(this);
       scope.ancestorEventTarget = value || null;
     }
   }, {
     key: 'descendantEventTarget',
     get: function get$$1() {
-      var scope = internal$3$1(this);
+      var scope = internal$7$1(this);
       return scope.descendantEventTarget;
     },
     set: function set$$1(value) {
-      var scope = internal$3$1(this);
+      var scope = internal$7$1(this);
       scope.descendantEventTarget = value || null;
     }
   }]);
@@ -1820,7 +2275,7 @@ var KeyboardEvent = function (_EventBundle) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$4$1 = Namespace('MouseEvent');
+var internal$8 = Namespace('MouseEvent');
 
 var MouseEvent = function (_EventBundle2) {
   inherits(MouseEvent, _EventBundle2);
@@ -1843,7 +2298,7 @@ var MouseEvent = function (_EventBundle2) {
 
 
       get(MouseEvent.prototype.__proto__ || Object.getPrototypeOf(MouseEvent.prototype), 'init', this).call(this, _extends({}, rest));
-      var scope = internal$4$1(this);
+      var scope = internal$8(this);
       scope.x = x || 0;
       scope.y = y || 0;
       scope.movementX = movementX || 0;
@@ -1853,25 +2308,25 @@ var MouseEvent = function (_EventBundle2) {
   }, {
     key: 'x',
     get: function get$$1() {
-      var scope = internal$4$1(this);
+      var scope = internal$8(this);
       return scope.x;
     }
   }, {
     key: 'y',
     get: function get$$1() {
-      var scope = internal$4$1(this);
+      var scope = internal$8(this);
       return scope.y;
     }
   }, {
     key: 'movementX',
     get: function get$$1() {
-      var scope = internal$4$1(this);
+      var scope = internal$8(this);
       return scope.movementX;
     }
   }, {
     key: 'movementY',
     get: function get$$1() {
-      var scope = internal$4$1(this);
+      var scope = internal$8(this);
       return scope.movementY;
     }
   }, {
@@ -1927,7 +2382,7 @@ var MouseEvent = function (_EventBundle2) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$5 = Namespace('Touch');
+var internal$9 = Namespace('Touch');
 
 var Touch = function () {
   function Touch() {
@@ -1940,13 +2395,13 @@ var Touch = function () {
   createClass(Touch, [{
     key: 'init',
     value: function init() {
-      var _ref3 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-          x = _ref3.x,
-          y = _ref3.y,
-          target = _ref3.target,
-          originalTouch = _ref3.originalTouch;
+      var _ref4 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+          x = _ref4.x,
+          y = _ref4.y,
+          target = _ref4.target,
+          originalTouch = _ref4.originalTouch;
 
-      var scope = internal$5(this);
+      var scope = internal$9(this);
       scope.x = x || 0;
       scope.y = y || 0;
       scope.target = target || null;
@@ -1956,25 +2411,25 @@ var Touch = function () {
   }, {
     key: 'x',
     get: function get$$1() {
-      var scope = internal$5(this);
+      var scope = internal$9(this);
       return scope.x;
     }
   }, {
     key: 'y',
     get: function get$$1() {
-      var scope = internal$5(this);
+      var scope = internal$9(this);
       return scope.y;
     }
   }, {
     key: 'target',
     get: function get$$1() {
-      var scope = internal$5(this);
+      var scope = internal$9(this);
       return scope.target;
     }
   }, {
     key: 'originalTouch',
     get: function get$$1() {
-      var scope = internal$5(this);
+      var scope = internal$9(this);
       return scope.originalTouch;
     }
   }, {
@@ -2010,7 +2465,7 @@ var Touch = function () {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$6$1 = Namespace('TouchEvent');
+var internal$10 = Namespace('TouchEvent');
 
 var TouchEvent = function (_EventBundle3) {
   inherits(TouchEvent, _EventBundle3);
@@ -2031,7 +2486,7 @@ var TouchEvent = function (_EventBundle3) {
 
 
       get(TouchEvent.prototype.__proto__ || Object.getPrototypeOf(TouchEvent.prototype), 'init', this).call(this, _extends({}, rest));
-      var scope = internal$6$1(this);
+      var scope = internal$10(this);
       scope.touches = touches;
       scope.changedTouches = changedTouches;
       return this;
@@ -2039,13 +2494,13 @@ var TouchEvent = function (_EventBundle3) {
   }, {
     key: 'touches',
     get: function get$$1() {
-      var scope = internal$6$1(this);
+      var scope = internal$10(this);
       return scope.touches;
     }
   }, {
     key: 'changedTouches',
     get: function get$$1() {
-      var scope = internal$6$1(this);
+      var scope = internal$10(this);
       return scope.changedTouches;
     }
   }, {
@@ -2096,13 +2551,13 @@ var TouchEvent = function (_EventBundle3) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$7$1 = Namespace('TouchList');
+var internal$11 = Namespace('TouchList');
 
 var TouchList = function () {
   function TouchList() {
     classCallCheck(this, TouchList);
 
-    var scope = internal$7$1(this);
+    var scope = internal$11(this);
     scope.array = [];
     this.init.apply(this, arguments);
   }
@@ -2110,7 +2565,7 @@ var TouchList = function () {
   createClass(TouchList, [{
     key: 'init',
     value: function init(first) {
-      var scope = internal$7$1(this);
+      var scope = internal$11(this);
       scope.array.length = 0;
       if (Array.isArray(first)) {
         var _scope$array;
@@ -2119,8 +2574,8 @@ var TouchList = function () {
       } else if (first) {
         var _scope$array2;
 
-        for (var _len = arguments.length, rest = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-          rest[_key - 1] = arguments[_key];
+        for (var _len5 = arguments.length, rest = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
+          rest[_key5 - 1] = arguments[_key5];
         }
 
         (_scope$array2 = scope.array).push.apply(_scope$array2, [first].concat(rest));
@@ -2129,13 +2584,13 @@ var TouchList = function () {
   }, {
     key: 'item',
     value: function item(index) {
-      var scope = internal$7$1(this);
+      var scope = internal$11(this);
       return scope.array[index];
     }
   }, {
     key: 'length',
     get: function get$$1() {
-      var scope = internal$7$1(this);
+      var scope = internal$11(this);
       return scope.array.length;
     }
   }]);
@@ -2257,17 +2712,17 @@ function Namespace$1() {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$1$1$1 = Namespace$1('AggregateFunction');
+var internal$1$1 = Namespace$1('AggregateFunction');
 
 var AggregateFunction = function () {
   // This constructor provides for inheritance only
   function AggregateFunction(namespace) {
     classCallCheck(this, AggregateFunction);
 
-    if (namespace !== internal$1$1$1) {
+    if (namespace !== internal$1$1) {
       throw new Error();
     }
-    var scope = internal$1$1$1(this);
+    var scope = internal$1$1(this);
 
     for (var _len = arguments.length, targets = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
       targets[_key - 1] = arguments[_key];
@@ -2279,7 +2734,7 @@ var AggregateFunction = function () {
   createClass(AggregateFunction, [{
     key: 'apply',
     value: function apply(target, bound, args) {
-      var scope = internal$1$1$1(this);
+      var scope = internal$1$1(this);
       return scope.targets.map(function (target) {
         return Reflect.apply(target, bound, args);
       });
@@ -2296,7 +2751,7 @@ var AggregateFunction = function () {
         args[_key2] = arguments[_key2];
       }
 
-      var instance = new (Function.prototype.bind.apply(this, [null].concat([internal$1$1$1], args)))();
+      var instance = new (Function.prototype.bind.apply(this, [null].concat([internal$1$1], args)))();
       return new Proxy(function () {}, instance);
     }
   }]);
@@ -2327,17 +2782,17 @@ var AggregateFunction = function () {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$$1 = Namespace$1('Aggregate');
+var internal$2$1 = Namespace$1('Aggregate');
 
 var Aggregate = function () {
   // This constructor provides for inheritance only
   function Aggregate(namespace) {
     classCallCheck(this, Aggregate);
 
-    if (namespace !== internal$$1) {
+    if (namespace !== internal$2$1) {
       throw new Error();
     }
-    var scope = internal$$1(this);
+    var scope = internal$2$1(this);
 
     for (var _len3 = arguments.length, targets = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
       targets[_key3 - 1] = arguments[_key3];
@@ -2349,7 +2804,7 @@ var Aggregate = function () {
   createClass(Aggregate, [{
     key: 'set',
     value: function set$$1(target, property, value, receiver) {
-      var scope = internal$$1(this);
+      var scope = internal$2$1(this);
       scope.targets.forEach(function (target) {
         Reflect.set(target, property, value);
       });
@@ -2358,7 +2813,7 @@ var Aggregate = function () {
   }, {
     key: 'get',
     value: function get$$1(target, property, receiver) {
-      var scope = internal$$1(this);
+      var scope = internal$2$1(this);
       var aggregative = scope.targets.every(function (target) {
         return typeof Reflect.get(target, property) === 'function';
       });
@@ -2381,7 +2836,7 @@ var Aggregate = function () {
         args[_key4] = arguments[_key4];
       }
 
-      var instance = new (Function.prototype.bind.apply(this, [null].concat([internal$$1], args)))();
+      var instance = new (Function.prototype.bind.apply(this, [null].concat([internal$2$1], args)))();
       return new Proxy({}, instance);
     }
   }]);
@@ -2552,7 +3007,7 @@ var FilePath$1 = function () {
 
 internal$3$1$1(FilePath$1).self = FilePath$1.current;
 
-var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+var commonjsGlobal$1 = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 function createCommonjsModule$1(fn, module) {
   return module = { exports: {} }, fn(module, module.exports), module.exports;
@@ -3360,7 +3815,7 @@ var ignore = { hash: 1, query: 1 };
  * @api public
  */
 function lolcation(loc) {
-  loc = loc || commonjsGlobal.location || {};
+  loc = loc || commonjsGlobal$1.location || {};
 
   var finaldestination = {},
       type = typeof loc === 'undefined' ? 'undefined' : _typeof(loc),
@@ -3865,8 +4320,8 @@ function performRequest(url, options) {
         }
         var buffer = new ArrayBuffer(response.length);
         var view = new Uint8Array(buffer);
-        for (var i = 0; i < response.length; ++i) {
-          view[i] = response[i];
+        for (var _i = 0; _i < response.length; ++_i) {
+          view[_i] = response[_i];
         }
         return buffer;
       });
@@ -4398,6 +4853,77 @@ var Transferral = function () {
   return Transferral;
 }();
 
+// Unique ID creation requires a high quality random # generator.  In the
+// browser this is a little complicated due to unknown quality of Math.random()
+// and inconsistent support for the `crypto` API.  We do the best we can via
+// feature-detection
+
+
+var rng$1;
+
+var crypto$1 = commonjsGlobal$1.crypto || commonjsGlobal$1.msCrypto; // for IE 11
+if (crypto$1 && crypto$1.getRandomValues) {
+  // WHATWG crypto RNG - http://wiki.whatwg.org/wiki/Crypto
+  var rnds8$1 = new Uint8Array(16); // eslint-disable-line no-undef
+  rng$1 = function whatwgRNG() {
+    crypto$1.getRandomValues(rnds8$1);
+    return rnds8$1;
+  };
+}
+
+if (!rng$1) {
+  // Math.random()-based (RNG)
+  //
+  // If all else fails, use Math.random().  It's fast, but is of unspecified
+  // quality.
+  var rnds$1 = new Array(16);
+  rng$1 = function rng() {
+    for (var i = 0, r; i < 16; i++) {
+      if ((i & 0x03) === 0) r = Math.random() * 0x100000000;
+      rnds$1[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return rnds$1;
+  };
+}
+
+var rngBrowser$1 = rng$1;
+
+/**
+ * Convert array of 16 byte values to UUID string format of the form:
+ * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+ */
+var byteToHex$1 = [];
+for (var i$1 = 0; i$1 < 256; ++i$1) {
+  byteToHex$1[i$1] = (i$1 + 0x100).toString(16).substr(1);
+}
+
+function bytesToUuid$1(buf, offset) {
+  var i = offset || 0;
+  var bth = byteToHex$1;
+  return bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + '-' + bth[buf[i++]] + bth[buf[i++]] + '-' + bth[buf[i++]] + bth[buf[i++]] + '-' + bth[buf[i++]] + bth[buf[i++]] + '-' + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]];
+}
+
+var bytesToUuid_1$1 = bytesToUuid$1;
+
+// **`v1()` - Generate time-based UUID**
+//
+// Inspired by https://github.com/LiosK/UUID.js
+// and http://docs.python.org/library/uuid.html
+
+// random #'s we need to init node and clockseq
+var _seedBytes$1 = rngBrowser$1();
+
+// Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
+var _nodeId$1 = [_seedBytes$1[0] | 0x01, _seedBytes$1[1], _seedBytes$1[2], _seedBytes$1[3], _seedBytes$1[4], _seedBytes$1[5]];
+
+// Per 4.2.2, randomize (14 bit) clockseq
+var _clockseq$1 = (_seedBytes$1[6] << 8 | _seedBytes$1[7]) & 0x3fff;
+
+// Previous uuid creation time
+var _lastMSecs$1 = 0;
+var _lastNSecs$1 = 0;
+
 //
 //  The MIT License
 //
@@ -4639,7 +5165,7 @@ function setFailed(target, value) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$3$2 = Namespace$1('ScriptLoader');
+var internal$4$1$1 = Namespace$1('ScriptLoader');
 
 var ScriptLoader = function (_DataLoader) {
   inherits(ScriptLoader, _DataLoader);
@@ -4654,7 +5180,7 @@ var ScriptLoader = function (_DataLoader) {
     value: function load() {
       var _this2 = this;
 
-      var scope = internal$3$2(this);
+      var scope = internal$4$1$1(this);
       if (scope.promise !== undefined) {
         return scope.promise;
       }
@@ -4704,7 +5230,7 @@ var ScriptLoader = function (_DataLoader) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$2$1 = Namespace$1('Loader');
+var internal$3$2 = Namespace$1('Loader');
 
 var Loader = function (_EventDispatcher) {
   inherits(Loader, _EventDispatcher);
@@ -4714,7 +5240,7 @@ var Loader = function (_EventDispatcher) {
 
     var _this = possibleConstructorReturn(this, (Loader.__proto__ || Object.getPrototypeOf(Loader)).call(this));
 
-    var scope = internal$2$1(_this);
+    var scope = internal$3$2(_this);
     scope.determinate = false;
     scope.completed = false;
     scope.failed = false;
@@ -4745,7 +5271,7 @@ var Loader = function (_EventDispatcher) {
   createClass(Loader, [{
     key: 'load',
     value: function load() {
-      var scope = internal$2$1(this);
+      var scope = internal$3$2(this);
       if (scope.promise !== undefined) {
         return scope.promise;
       }
@@ -4758,7 +5284,7 @@ var Loader = function (_EventDispatcher) {
   }, {
     key: 'abort',
     value: function abort() {
-      var scope = internal$2$1(this);
+      var scope = internal$3$2(this);
       if (scope.promise === undefined) {
         return;
       }
@@ -4769,13 +5295,13 @@ var Loader = function (_EventDispatcher) {
   }, {
     key: 'loaders',
     get: function get$$1() {
-      var scope = internal$2$1(this);
+      var scope = internal$3$2(this);
       return [].concat(toConsumableArray(scope.loaders));
     }
   }, {
     key: 'size',
     get: function get$$1() {
-      var scope = internal$2$1(this);
+      var scope = internal$3$2(this);
       return scope.loaders.reduce(function (size, loader) {
         return size + loader.size;
       }, 0);
@@ -4783,7 +5309,7 @@ var Loader = function (_EventDispatcher) {
   }, {
     key: 'progress',
     get: function get$$1() {
-      var scope = internal$2$1(this
+      var scope = internal$3$2(this
 
       // Calculate the aggregate progress by the number of loaders when the sizes
       // of all of the loaders are zero.
@@ -4808,19 +5334,19 @@ var Loader = function (_EventDispatcher) {
   }, {
     key: 'determinate',
     get: function get$$1() {
-      var scope = internal$2$1(this);
+      var scope = internal$3$2(this);
       return scope.determinate;
     }
   }, {
     key: 'completed',
     get: function get$$1() {
-      var scope = internal$2$1(this);
+      var scope = internal$3$2(this);
       return scope.completed;
     }
   }, {
     key: 'failed',
     get: function get$$1() {
-      var scope = internal$2$1(this);
+      var scope = internal$3$2(this);
       return scope.failed;
     }
   }], [{
@@ -4923,7 +5449,7 @@ function handleFailed(event) {
 }
 
 function updateDeterminate(target) {
-  var scope = internal$2$1(target);
+  var scope = internal$3$2(target);
   var value = scope.loaders.every(function (loader) {
     return loader.determinate;
   });
@@ -4934,7 +5460,7 @@ function updateDeterminate(target) {
 }
 
 function updateCompleted(target) {
-  var scope = internal$2$1(target);
+  var scope = internal$3$2(target);
   var value = scope.loaders.every(function (loader) {
     return loader.completed;
   });
@@ -4945,7 +5471,7 @@ function updateCompleted(target) {
 }
 
 function updateFailed(target) {
-  var scope = internal$2$1(target);
+  var scope = internal$3$2(target);
   var value = scope.loaders.some(function (loader) {
     return loader.failed;
   });

@@ -34,8 +34,6 @@ chai.use(chaiAsPromised)
 chai.use(sinonChai)
 
 describe('DataLoader', () => {
-  const host = 'http://localhost:3000'
-
   let server = null
 
   beforeEach(() => {

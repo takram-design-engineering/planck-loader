@@ -178,6 +178,8 @@ class FilePath {
 
 internal$3(FilePath).self = FilePath.current;
 
+var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
 function createCommonjsModule(fn, module) {
   return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
@@ -877,6 +879,57 @@ if (Environment.type === 'node') {
   }
 }
 
+// Unique ID creation requires a high quality random # generator.  In the
+// browser this is a little complicated due to unknown quality of Math.random()
+// and inconsistent support for the `crypto` API.  We do the best we can via
+// feature-detection
+var rng;
+
+var crypto = commonjsGlobal.crypto || commonjsGlobal.msCrypto; // for IE 11
+if (crypto && crypto.getRandomValues) {
+  // WHATWG crypto RNG - http://wiki.whatwg.org/wiki/Crypto
+  var rnds8 = new Uint8Array(16); // eslint-disable-line no-undef
+  rng = function whatwgRNG() {
+    crypto.getRandomValues(rnds8);
+    return rnds8;
+  };
+}
+
+if (!rng) {
+  // Math.random()-based (RNG)
+  //
+  // If all else fails, use Math.random().  It's fast, but is of unspecified
+  // quality.
+  var rnds = new Array(16);
+  rng = function () {
+    for (var i = 0, r; i < 16; i++) {
+      if ((i & 0x03) === 0) r = Math.random() * 0x100000000;
+      rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return rnds;
+  };
+}
+
+var rngBrowser = rng;
+
+/**
+ * Convert array of 16 byte values to UUID string format of the form:
+ * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+ */
+var byteToHex = [];
+for (var i = 0; i < 256; ++i) {
+  byteToHex[i] = (i + 0x100).toString(16).substr(1);
+}
+
+// **`v1()` - Generate time-based UUID**
+//
+// Inspired by https://github.com/LiosK/UUID.js
+// and http://docs.python.org/library/uuid.html
+
+// random #'s we need to init node and clockseq
+var _seedBytes = rngBrowser();
+
 //
 //  The MIT License
 //
@@ -901,15 +954,15 @@ if (Environment.type === 'node') {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-const internal$1 = Namespace('Event');
+const internal$3$1 = Namespace('Event');
 
 class Event {
   constructor(options = {}) {
     this.init(options);
   }
 
-  init({ type, captures = true, bubbles = false } = {}) {
-    const scope = internal$1(this);
+  init({ type, captures = false, bubbles = true } = {}) {
+    const scope = internal$3$1(this);
     scope.type = type || null;
     scope.captures = !!captures;
     scope.bubbles = !!bubbles;
@@ -923,64 +976,64 @@ class Event {
   }
 
   get type() {
-    const scope = internal$1(this);
+    const scope = internal$3$1(this);
     return scope.type;
   }
 
   get target() {
-    const scope = internal$1(this);
+    const scope = internal$3$1(this);
     return scope.target;
   }
 
   get currentTarget() {
-    const scope = internal$1(this);
+    const scope = internal$3$1(this);
     return scope.currentTarget;
   }
 
   get phase() {
-    const scope = internal$1(this);
+    const scope = internal$3$1(this);
     return scope.phase;
   }
 
   get captures() {
-    const scope = internal$1(this);
+    const scope = internal$3$1(this);
     return scope.captures;
   }
 
   get bubbles() {
-    const scope = internal$1(this);
+    const scope = internal$3$1(this);
     return scope.bubbles;
   }
 
   get timestamp() {
-    const scope = internal$1(this);
+    const scope = internal$3$1(this);
     return scope.timestamp;
   }
 
   stopPropagation() {
-    const scope = internal$1(this);
+    const scope = internal$3$1(this);
     scope.propagationStopped = true;
   }
 
   stopImmediatePropagation() {
-    const scope = internal$1(this);
+    const scope = internal$3$1(this);
     scope.propagationStopped = true;
     scope.immediatePropagationStopped = true;
   }
 
   get propagationStopped() {
-    const scope = internal$1(this);
+    const scope = internal$3$1(this);
     return scope.propagationStopped;
   }
 
   get immediatePropagationStopped() {
-    const scope = internal$1(this);
+    const scope = internal$3$1(this);
     return scope.immediatePropagationStopped;
   }
 }
 
 function modifyEvent(event) {
-  const scope = internal$1(event);
+  const scope = internal$3$1(event);
   return {
     set target(value) {
       scope.target = value || null;
@@ -1051,8 +1104,9 @@ class CustomEvent extends Event {
     let { type, target } = _ref,
         rest = objectWithoutProperties(_ref, ['type', 'target']);
 
-    super.init(_extends({ type }, rest));
-    modifyEvent(this).target = target;
+    super.init(_extends({ type }, rest
+    // Support target as a parameter
+    ));modifyEvent(this).target = target || null;
     return this;
   }
 }
@@ -1123,11 +1177,21 @@ class GenericEvent extends CustomEvent {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-const internal$2 = Namespace('EventDispatcher');
+const internal$6$1 = Namespace('EventDispatcher');
+
+function handleEvent(event, listener) {
+  if (typeof listener === 'function') {
+    listener(event);
+  } else if (typeof listener.handleEvent === 'function') {
+    listener.handleEvent(event);
+  } else {
+    throw new Error('Listener is neither function nor event listener');
+  }
+}
 
 class EventDispatcher {
   constructor() {
-    const scope = internal$2(this);
+    const scope = internal$6$1(this);
     scope.listeners = {};
   }
 
@@ -1135,7 +1199,7 @@ class EventDispatcher {
     if (typeof listener !== 'function' && typeof listener !== 'object') {
       throw new Error('Attempt to add non-function non-object listener');
     }
-    const scope = internal$2(this);
+    const scope = internal$6$1(this);
     if (scope.listeners[type] === undefined) {
       scope.listeners[type] = { bubble: [], capture: [] };
     }
@@ -1147,7 +1211,7 @@ class EventDispatcher {
   }
 
   removeEventListener(type, listener, capture = false) {
-    const scope = internal$2(this);
+    const scope = internal$6$1(this);
     if (scope.listeners[type] === undefined) {
       return;
     }
@@ -1158,12 +1222,40 @@ class EventDispatcher {
     }
   }
 
+  on(...args) {
+    this.addEventListener(...args);
+    return this;
+  }
+
+  off(...args) {
+    this.removeEventListener(...args);
+    return this;
+  }
+
+  once(type, listener, ...rest) {
+    const delegate = event => {
+      handleEvent(event, listener);
+      this.removeEventListener(type, delegate, ...rest);
+    };
+    this.addEventListener(type, delegate, ...rest);
+    return this;
+  }
+
   dispatchEvent(object) {
     let event = object;
     if (!(event instanceof Event)) {
       event = new GenericEvent(object);
     }
-    const scope = internal$2(this);
+    const modifier = modifyEvent(event
+
+    // Set target to this when it's not set
+    );if (!event.target) {
+      modifier.target = this;
+    }
+    // Current target should be always this
+    modifier.currentTarget = this;
+
+    const scope = internal$6$1(this);
     const listeners = scope.listeners[event.type];
     if (listeners === undefined) {
       return;
@@ -1171,13 +1263,7 @@ class EventDispatcher {
     const phase = event.phase;
     if (!phase || phase === 'target' || phase === 'capture') {
       [...listeners.capture].some(listener => {
-        if (typeof listener === 'function') {
-          listener.call(this, event);
-        } else if (typeof listener.handleEvent === 'function') {
-          listener.handleEvent(event);
-        } else {
-          throw new Error('Listener is neither function nor event listener');
-        }
+        handleEvent(event, listener);
         return event.immediatePropagationStopped;
       });
     }
@@ -1186,11 +1272,7 @@ class EventDispatcher {
     }
     if (!phase || phase === 'target' || phase === 'bubble') {
       [...listeners.bubble].some(listener => {
-        if (typeof listener === 'function') {
-          listener.call(this, event);
-        } else if (typeof listener.handleEvent === 'function') {
-          listener.handleEvent(event);
-        }
+        handleEvent(event, listener);
         return event.immediatePropagationStopped;
       });
     }
@@ -1376,6 +1458,8 @@ class FilePath$1 {
 }
 
 internal$3$1$1(FilePath$1).self = FilePath$1.current;
+
+var commonjsGlobal$1 = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 function createCommonjsModule$1(fn, module) {
   return module = { exports: {} }, fn(module, module.exports), module.exports;
@@ -2122,6 +2206,75 @@ if (Environment$1.type === 'node') {
   }
 }
 
+// Unique ID creation requires a high quality random # generator.  In the
+// browser this is a little complicated due to unknown quality of Math.random()
+// and inconsistent support for the `crypto` API.  We do the best we can via
+// feature-detection
+var rng$1;
+
+var crypto$1 = commonjsGlobal$1.crypto || commonjsGlobal$1.msCrypto; // for IE 11
+if (crypto$1 && crypto$1.getRandomValues) {
+  // WHATWG crypto RNG - http://wiki.whatwg.org/wiki/Crypto
+  var rnds8$1 = new Uint8Array(16); // eslint-disable-line no-undef
+  rng$1 = function whatwgRNG() {
+    crypto$1.getRandomValues(rnds8$1);
+    return rnds8$1;
+  };
+}
+
+if (!rng$1) {
+  // Math.random()-based (RNG)
+  //
+  // If all else fails, use Math.random().  It's fast, but is of unspecified
+  // quality.
+  var rnds$1 = new Array(16);
+  rng$1 = function () {
+    for (var i = 0, r; i < 16; i++) {
+      if ((i & 0x03) === 0) r = Math.random() * 0x100000000;
+      rnds$1[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return rnds$1;
+  };
+}
+
+var rngBrowser$1 = rng$1;
+
+/**
+ * Convert array of 16 byte values to UUID string format of the form:
+ * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+ */
+var byteToHex$1 = [];
+for (var i$1 = 0; i$1 < 256; ++i$1) {
+  byteToHex$1[i$1] = (i$1 + 0x100).toString(16).substr(1);
+}
+
+function bytesToUuid$1(buf, offset) {
+  var i = offset || 0;
+  var bth = byteToHex$1;
+  return bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + '-' + bth[buf[i++]] + bth[buf[i++]] + '-' + bth[buf[i++]] + bth[buf[i++]] + '-' + bth[buf[i++]] + bth[buf[i++]] + '-' + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]];
+}
+
+var bytesToUuid_1$1 = bytesToUuid$1;
+
+// **`v1()` - Generate time-based UUID**
+//
+// Inspired by https://github.com/LiosK/UUID.js
+// and http://docs.python.org/library/uuid.html
+
+// random #'s we need to init node and clockseq
+var _seedBytes$1 = rngBrowser$1();
+
+// Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
+var _nodeId$1 = [_seedBytes$1[0] | 0x01, _seedBytes$1[1], _seedBytes$1[2], _seedBytes$1[3], _seedBytes$1[4], _seedBytes$1[5]];
+
+// Per 4.2.2, randomize (14 bit) clockseq
+var _clockseq$1 = (_seedBytes$1[6] << 8 | _seedBytes$1[7]) & 0x3fff;
+
+// Previous uuid creation time
+var _lastMSecs$1 = 0;
+var _lastNSecs$1 = 0;
+
 //
 //  The MIT License
 //
@@ -2343,11 +2496,11 @@ function setFailed(target, value) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-const internal$3$2 = Namespace$1('ScriptLoader');
+const internal$4$1$1 = Namespace$1('ScriptLoader');
 
 class ScriptLoader extends DataLoader {
   load() {
-    const scope = internal$3$2(this);
+    const scope = internal$4$1$1(this);
     if (scope.promise !== undefined) {
       return scope.promise;
     }
@@ -2395,12 +2548,12 @@ class ScriptLoader extends DataLoader {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-const internal$2$1 = Namespace$1('Loader');
+const internal$3$2 = Namespace$1('Loader');
 
 class Loader extends EventDispatcher {
   constructor(...sequence) {
     super();
-    const scope = internal$2$1(this);
+    const scope = internal$3$2(this);
     scope.determinate = false;
     scope.completed = false;
     scope.failed = false;
@@ -2423,19 +2576,19 @@ class Loader extends EventDispatcher {
   }
 
   get loaders() {
-    const scope = internal$2$1(this);
+    const scope = internal$3$2(this);
     return [...scope.loaders];
   }
 
   get size() {
-    const scope = internal$2$1(this);
+    const scope = internal$3$2(this);
     return scope.loaders.reduce((size, loader) => {
       return size + loader.size;
     }, 0);
   }
 
   get progress() {
-    const scope = internal$2$1(this
+    const scope = internal$3$2(this
 
     // Calculate the aggregate progress by the number of loaders when the sizes
     // of all of the loaders are zero.
@@ -2457,22 +2610,22 @@ class Loader extends EventDispatcher {
   }
 
   get determinate() {
-    const scope = internal$2$1(this);
+    const scope = internal$3$2(this);
     return scope.determinate;
   }
 
   get completed() {
-    const scope = internal$2$1(this);
+    const scope = internal$3$2(this);
     return scope.completed;
   }
 
   get failed() {
-    const scope = internal$2$1(this);
+    const scope = internal$3$2(this);
     return scope.failed;
   }
 
   load() {
-    const scope = internal$2$1(this);
+    const scope = internal$3$2(this);
     if (scope.promise !== undefined) {
       return scope.promise;
     }
@@ -2484,7 +2637,7 @@ class Loader extends EventDispatcher {
   }
 
   abort() {
-    const scope = internal$2$1(this);
+    const scope = internal$3$2(this);
     if (scope.promise === undefined) {
       return;
     }
@@ -2582,7 +2735,7 @@ function handleFailed(event) {
 }
 
 function updateDeterminate(target) {
-  const scope = internal$2$1(target);
+  const scope = internal$3$2(target);
   const value = scope.loaders.every(loader => {
     return loader.determinate;
   });
@@ -2593,7 +2746,7 @@ function updateDeterminate(target) {
 }
 
 function updateCompleted(target) {
-  const scope = internal$2$1(target);
+  const scope = internal$3$2(target);
   const value = scope.loaders.every(loader => {
     return loader.completed;
   });
@@ -2604,7 +2757,7 @@ function updateCompleted(target) {
 }
 
 function updateFailed(target) {
-  const scope = internal$2$1(target);
+  const scope = internal$3$2(target);
   const value = scope.loaders.some(loader => {
     return loader.failed;
   });

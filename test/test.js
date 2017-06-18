@@ -24,6 +24,6 @@
 
 import './runner'
 
-import './loader/DataLoader'
-import './loader/Loader'
-import './loader/ScriptLoader'
+import './unit/DataLoader'
+import './unit/Loader'
+import './unit/ScriptLoader'
