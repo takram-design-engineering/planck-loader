@@ -13,7 +13,13 @@ Provides for parallel and sequential data loading and progress observation.
 
 ## Getting Started
 
-### Example
+### Installing
+
+```sh
+npm install @takram/planck-loader
+```
+
+## Example
 
 The example below will load `data1.json`, `data2.json` and `lib.js` in parallel (in a JavaScript sense), whereas `main.js` will be loaded after loading `lib.js`.
 
@@ -47,18 +53,12 @@ loader.load().then(requests => {
 })
 ```
 
-### Installing
-
-```sh
-npm install @takram/planck-loader
-```
-
 ## API Reference
 
 ### Loader
 
 <a id="new-loader" href="#new-loader">#</a>
-new **Loader**(...*urls*)
+new **Loader**(*url1* [, *url2* [, ...]])
 
 The constructor that takes a sequence of URLs or arrays of URLs. The top level arguments will be loaded sequentially, and the second level will be loaded in parallel. Any further depth of array repeats cycles its behavior.
 
