@@ -57,7 +57,7 @@ npm install @takram/planck-loader
 
 ### Loader
 
-[#]() new **Loader**(...urls)
+[#]() new **Loader**(...*urls*)
 
 The constructor that takes a sequence of URLs or arrays of URLs. The top level arguments will be loaded sequentially, and the second level will be loaded in parallel. Any further depth of array repeats cycles its behavior.
 
