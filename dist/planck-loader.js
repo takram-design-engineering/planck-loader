@@ -1,7 +1,7 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(factory((global.Planck = global.Planck || {})));
+	(factory((global.Planck = {})));
 }(this, (function (exports) { 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
@@ -1353,9 +1353,9 @@ var CustomEvent = function (_Event) {
           rest = objectWithoutProperties(_ref, ['type', 'target']);
 
 
-      get(CustomEvent.prototype.__proto__ || Object.getPrototypeOf(CustomEvent.prototype), 'init', this).call(this, _extends({ type: type }, rest
+      get(CustomEvent.prototype.__proto__ || Object.getPrototypeOf(CustomEvent.prototype), 'init', this).call(this, _extends({ type: type }, rest));
       // Support target as a parameter
-      ));modifyEvent(this).target = target || null;
+      modifyEvent(this).target = target || null;
       return this;
     }
   }]);
@@ -1495,14 +1495,14 @@ var Binder = function () {
     scope.source = source;
     scope.name = name;
     scope.targets = [].concat(toConsumableArray(targets));
-    scope.handleChange = handleChange.bind(this, transform
+    scope.handleChange = handleChange.bind(this, transform);
 
     // Listen for state events with the given name
-    );var type = StateEvent.type(name);
-    scope.source.addEventListener(type, scope.handleChange, false
+    var type = StateEvent.type(name);
+    scope.source.addEventListener(type, scope.handleChange, false);
 
     // Initial assignment
-    );if (assigns) {
+    if (assigns) {
       targets.forEach(function (target) {
         target.object[target.name] = transform(source[name]);
       });
@@ -1597,10 +1597,10 @@ function formatTargets() {
   // Flatten arguments
   var flatArgs = args.reduce(function (targets, value) {
     return targets.concat(value);
-  }, []
+  }, []);
 
   // Convert the array from [object, name, ...] to [{ object, name }, ...]
-  );var object = void 0;
+  var object = void 0;
   var targets = flatArgs.reduce(function (targets, value, index) {
     if (index % 2 === 0) {
       object = value;
@@ -1608,10 +1608,10 @@ function formatTargets() {
       targets.push({ object: object, name: value });
     }
     return targets;
-  }, []
+  }, []);
 
   // Defaults to one-way binding for multiple targets
-  );var options = Object.assign({
+  var options = Object.assign({
     oneWay: targets.length > 1
   }, flatArgs[targets.length * 2]);
   return [targets, options];
@@ -1984,10 +1984,10 @@ var EventDispatcher = function () {
       if (!(event instanceof Event)) {
         event = new GenericEvent(object);
       }
-      var modifier = modifyEvent(event
+      var modifier = modifyEvent(event);
 
       // Set target to this when it's not set
-      );if (!event.target) {
+      if (!event.target) {
         modifier.target = this;
       }
       // Current target should be always this
@@ -2100,10 +2100,10 @@ var EventTarget = function (_EventDispatcher) {
       if (!(event instanceof Event)) {
         event = new GenericEvent(object);
       }
-      var modifier = modifyEvent(event
+      var modifier = modifyEvent(event);
 
       // Just dispatch the event if it doesn't capture nor bubble
-      );if (!event.captures && !event.bubbles) {
+      if (!event.captures && !event.bubbles) {
         this.dispatchImmediateEvent(event);
         return;
       }
@@ -2123,10 +2123,10 @@ var EventTarget = function (_EventDispatcher) {
         capturingPath.pop();
       }
       var bubblingPath = [].concat(toConsumableArray(capturingPath));
-      bubblingPath.reverse
+      bubblingPath.reverse();
 
       // Capturing phase
-      ();if (event.captures) {
+      if (event.captures) {
         modifier.phase = 'capture';
         capturingPath.some(function (object) {
           object.dispatchImmediateEvent(event);
@@ -3327,7 +3327,7 @@ var escapee$1 = {
   t: '\t'
 };
 var text$1;
-var error$1$1 = function error$1(m) {
+var error = function error(m) {
   // Call error when something is wrong.
   throw {
     name: 'SyntaxError',
@@ -3339,7 +3339,7 @@ var error$1$1 = function error$1(m) {
 var next$1 = function next(c) {
   // If a c parameter is provided, verify that it matches the current character.
   if (c && c !== ch$1) {
-    error$1$1("Expected '" + c + "' instead of '" + ch$1 + "'");
+    error("Expected '" + c + "' instead of '" + ch$1 + "'");
   }
 
   // Get the next character. When there are no more characters,
@@ -3382,7 +3382,7 @@ var number$1 = function number() {
   }
   number = +string;
   if (!isFinite(number)) {
-    error$1$1("Bad number");
+    error("Bad number");
   } else {
     return number;
   }
@@ -3422,7 +3422,7 @@ var string$1 = function string() {
       }
     }
   }
-  error$1$1("Bad string");
+  error("Bad string");
 };
 var white$1 = function white() {
 
@@ -3457,7 +3457,7 @@ var word$1 = function word() {
       next$1('l');
       return null;
   }
-  error$1$1("Unexpected '" + ch$1 + "'");
+  error("Unexpected '" + ch$1 + "'");
 };
 var value$1;
 var array$1 = function array() {
@@ -3484,7 +3484,7 @@ var array$1 = function array() {
       white$1();
     }
   }
-  error$1$1("Bad array");
+  error("Bad array");
 };
 var object$1 = function object() {
 
@@ -3505,7 +3505,7 @@ var object$1 = function object() {
       white$1();
       next$1(':');
       if (Object.hasOwnProperty.call(object, key)) {
-        error$1$1('Duplicate key "' + key + '"');
+        error('Duplicate key "' + key + '"');
       }
       object[key] = value$1();
       white$1();
@@ -3517,7 +3517,7 @@ var object$1 = function object() {
       white$1();
     }
   }
-  error$1$1("Bad object");
+  error("Bad object");
 };
 
 value$1 = function value() {
@@ -3635,18 +3635,9 @@ var Multiton = function () {
         args[_key5 - 1] = arguments[_key5];
       }
 
-      var instance = this.new.apply(this, [coercedKey].concat(args));
+      var instance = new (Function.prototype.bind.apply(this, [null].concat([coercedKey], args)))();
       scope.instances.set(coercedKey, instance);
       return instance;
-    }
-  }, {
-    key: 'new',
-    value: function _new() {
-      for (var _len6 = arguments.length, args = Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
-        args[_key6] = arguments[_key6];
-      }
-
-      return new (Function.prototype.bind.apply(this, [null].concat(args)))();
     }
   }, {
     key: 'coerceMultitonKey',
@@ -4257,7 +4248,7 @@ function browserRequest(url, options) {
     }
     request.responseType = options.type;
     request.addEventListener('loadend', function (event) {
-      if (request.status !== 200) {
+      if (request.status < 200 || request.status >= 300) {
         reject(request.status);
         return;
       }
@@ -4294,7 +4285,7 @@ function nodeRequest(url, options) {
         reject(error);
         return;
       }
-      if (response.statusCode !== 200) {
+      if (response.statusCode < 200 || response.statusCode >= 300) {
         reject(response.statusCode);
       }
       resolve(response.body);
@@ -4332,8 +4323,8 @@ function performRequest(url, options) {
 }
 
 function parseArguments() {
-  for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
-    args[_key7] = arguments[_key7];
+  for (var _len6 = arguments.length, args = Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
+    args[_key6] = arguments[_key6];
   }
 
   var url = args[0],
@@ -4561,18 +4552,13 @@ var Singleton = function () {
     value: function get$$1() {
       var scope = internal$7(this);
       if (scope.instance === undefined) {
-        scope.instance = this.new.apply(this, arguments);
+        for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
+          args[_key7] = arguments[_key7];
+        }
+
+        scope.instance = new (Function.prototype.bind.apply(this, [null].concat(args)))();
       }
       return scope.instance;
-    }
-  }, {
-    key: 'new',
-    value: function _new() {
-      for (var _len8 = arguments.length, args = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
-        args[_key8] = arguments[_key8];
-      }
-
-      return new (Function.prototype.bind.apply(this, [null].concat(args)))();
     }
   }]);
   return Singleton;
@@ -5309,11 +5295,11 @@ var Loader = function (_EventDispatcher) {
   }, {
     key: 'progress',
     get: function get$$1() {
-      var scope = internal$3$2(this
+      var scope = internal$3$2(this);
 
       // Calculate the aggregate progress by the number of loaders when the sizes
       // of all of the loaders are zero.
-      );if (this.size === 0) {
+      if (this.size === 0) {
         return Math.min(1, scope.loaders.reduce(function (progress, loader) {
           return progress + loader.progress / scope.loaders.length;
         }, 0));
@@ -5477,10 +5463,10 @@ function updateFailed(target) {
   });
   if (value !== scope.failed) {
     scope.failed = value;
-    target.dispatchEvent({ type: 'failed', target: target }
+    target.dispatchEvent({ type: 'failed', target: target });
 
     // Abort all the loaders
-    );if (scope.failed) {
+    if (scope.failed) {
       target.abort();
     }
   }

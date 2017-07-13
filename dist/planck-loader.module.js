@@ -1104,9 +1104,9 @@ class CustomEvent extends Event {
     let { type, target } = _ref,
         rest = objectWithoutProperties(_ref, ['type', 'target']);
 
-    super.init(_extends({ type }, rest
+    super.init(_extends({ type }, rest));
     // Support target as a parameter
-    ));modifyEvent(this).target = target || null;
+    modifyEvent(this).target = target || null;
     return this;
   }
 }
@@ -1246,10 +1246,10 @@ class EventDispatcher {
     if (!(event instanceof Event)) {
       event = new GenericEvent(object);
     }
-    const modifier = modifyEvent(event
+    const modifier = modifyEvent(event);
 
     // Set target to this when it's not set
-    );if (!event.target) {
+    if (!event.target) {
       modifier.target = this;
     }
     // Current target should be always this
@@ -1770,7 +1770,7 @@ var escapee$1 = {
   t: '\t'
 };
 var text$1;
-var error$1$1 = function (m) {
+var error = function (m) {
   // Call error when something is wrong.
   throw {
     name: 'SyntaxError',
@@ -1782,7 +1782,7 @@ var error$1$1 = function (m) {
 var next$1 = function (c) {
   // If a c parameter is provided, verify that it matches the current character.
   if (c && c !== ch$1) {
-    error$1$1("Expected '" + c + "' instead of '" + ch$1 + "'");
+    error("Expected '" + c + "' instead of '" + ch$1 + "'");
   }
 
   // Get the next character. When there are no more characters,
@@ -1825,7 +1825,7 @@ var number$1 = function () {
   }
   number = +string;
   if (!isFinite(number)) {
-    error$1$1("Bad number");
+    error("Bad number");
   } else {
     return number;
   }
@@ -1865,7 +1865,7 @@ var string$1 = function () {
       }
     }
   }
-  error$1$1("Bad string");
+  error("Bad string");
 };
 var white$1 = function () {
 
@@ -1900,7 +1900,7 @@ var word$1 = function () {
       next$1('l');
       return null;
   }
-  error$1$1("Unexpected '" + ch$1 + "'");
+  error("Unexpected '" + ch$1 + "'");
 };
 var value$1;
 var array$1 = function () {
@@ -1927,7 +1927,7 @@ var array$1 = function () {
       white$1();
     }
   }
-  error$1$1("Bad array");
+  error("Bad array");
 };
 var object$1 = function () {
 
@@ -1948,7 +1948,7 @@ var object$1 = function () {
       white$1();
       next$1(':');
       if (Object.hasOwnProperty.call(object, key)) {
-        error$1$1('Duplicate key "' + key + '"');
+        error('Duplicate key "' + key + '"');
       }
       object[key] = value$1();
       white$1();
@@ -1960,7 +1960,7 @@ var object$1 = function () {
       white$1();
     }
   }
-  error$1$1("Bad object");
+  error("Bad object");
 };
 
 value$1 = function () {
@@ -2588,11 +2588,11 @@ class Loader extends EventDispatcher {
   }
 
   get progress() {
-    const scope = internal$3$2(this
+    const scope = internal$3$2(this);
 
     // Calculate the aggregate progress by the number of loaders when the sizes
     // of all of the loaders are zero.
-    );if (this.size === 0) {
+    if (this.size === 0) {
       return Math.min(1, scope.loaders.reduce((progress, loader) => {
         return progress + loader.progress / scope.loaders.length;
       }, 0));
@@ -2763,10 +2763,10 @@ function updateFailed(target) {
   });
   if (value !== scope.failed) {
     scope.failed = value;
-    target.dispatchEvent({ type: 'failed', target }
+    target.dispatchEvent({ type: 'failed', target });
 
     // Abort all the loaders
-    );if (scope.failed) {
+    if (scope.failed) {
       target.abort();
     }
   }
