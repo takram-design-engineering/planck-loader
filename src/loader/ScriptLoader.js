@@ -24,7 +24,7 @@
 
 import { Namespace } from '@takram/planck-core'
 
-import DataLoader from '../loader/DataLoader'
+import DataLoader from './DataLoader'
 
 export const internal = Namespace('ScriptLoader')
 
