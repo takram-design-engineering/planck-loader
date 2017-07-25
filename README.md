@@ -13,7 +13,13 @@ Provides for parallel and sequential data loading and progress observation.
 
 ## Getting Started
 
-### Example
+### Installing
+
+```sh
+npm install @takram/planck-loader
+```
+
+## Example
 
 The example below will load `data1.json`, `data2.json` and `lib.js` in parallel (in a JavaScript sense), whereas `main.js` will be loaded after loading `lib.js`.
 
@@ -47,17 +53,12 @@ loader.load().then(requests => {
 })
 ```
 
-### Installing
-
-```sh
-npm install @takram/planck-loader
-```
-
 ## API Reference
 
 ### Loader
 
-[#]() new **Loader**(...urls)
+<a id="new-loader" href="#new-loader">#</a>
+new **Loader**(*url1* [, *url2* [, ...]])
 
 The constructor that takes a sequence of URLs or arrays of URLs. The top level arguments will be loaded sequentially, and the second level will be loaded in parallel. Any further depth of array repeats cycles its behavior.
 
@@ -83,27 +84,33 @@ new Loader([a, [c, [e, f], d], b])
 - `c` and `d` are loaded sequentially
 - `e` and `f` are loaded in parallel
 
-[#]() *loader*.**load**()
+<a id="loader-load" href="#loader-load">#</a>
+*loader*.**load**()
 
 Returns a `Promise` that resolves with an array of requests (`XMLHTTPRequest`). It rejects with a status code when one of the requests fails.
 
-[#]() *loader*.**size**
+<a id="loader-size" href="#loader-size">#</a>
+*loader*.**size**
 
 `Number` that indicates the size of total payloads in bytes, dispatching an `size` event when the value changes.
 
-[#]() *loader*.**progress**
+<a id="loader-progress" href="#loader-progress">#</a>
+*loader*.**progress**
 
 `Number` that indicates the loading progress between 0-1 in total, dispatching an `progress ` event when the value changes.
 
-[#]() *loader*.**determinate**
+<a id="loader-determinate" href="#loader-determinate">#</a>
+*loader*.**determinate**
 
 `Boolean` Becomes when the loader becomes able to determine the progress, dispatching an `determinate ` event when the value changes.
 
-[#]() *loader*.**completed**
+<a id="loader-completed" href="#loader-completed">#</a>
+*loader*.**completed**
 
 `Boolean` Becomes true when all of the requests completes loadind, dispatching an `completed ` event when the value changes.
 
-[#]() *loader*.**failed**
+<a id="loader-failed" href="#loader-failed">#</a>
+*loader*.**failed**
 
 `Boolean` Becomes true when any loader fails to load, dispatching an `failed ` event when the value changes.
 

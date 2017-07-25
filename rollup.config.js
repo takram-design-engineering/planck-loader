@@ -48,7 +48,7 @@ export default {
     {
       format: 'umd',
       moduleName: 'Planck',
-      dest: './build/planck-loader.js',
+      dest: './dist/planck-loader.js',
     },
   ],
 }

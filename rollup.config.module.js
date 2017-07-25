@@ -23,14 +23,14 @@
 //
 
 import babel from 'rollup-plugin-babel'
-import commonjs from 'rollup-plugin-commonjs'
-import nodeResolve from 'rollup-plugin-node-resolve'
+import builtins from 'builtin-modules'
+
+const dependencies = Object.keys(require('./package.json').dependencies)
 
 export default {
   entry: './src/main.js',
+  sourceMap: true,
   plugins: [
-    nodeResolve({ main: true, module: true, browser: true }),
-    commonjs(),
     babel({
       presets: [
         'es2017',
@@ -41,10 +41,14 @@ export default {
       ],
     }),
   ],
+  external: [
+    ...builtins,
+    ...dependencies,
+  ],
   targets: [
     {
       format: 'es',
-      dest: './build/planck-loader.module.js',
+      dest: './dist/planck-loader.module.js',
     },
   ],
 }
