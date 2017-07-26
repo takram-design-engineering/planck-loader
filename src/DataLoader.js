@@ -22,8 +22,8 @@
 //  DEALINGS IN THE SOFTWARE.
 //
 
-import { EventDispatcher } from '@takram/planck-event'
-import { Namespace } from '@takram/planck-core'
+import EventDispatcher from '@takram/planck-event/src/EventDispatcher'
+import Namespace from '@takram/planck-core/src/Namespace'
 
 export const internal = Namespace('DataLoader')
 

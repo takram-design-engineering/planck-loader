@@ -22,6 +22,34 @@
 //  DEALINGS IN THE SOFTWARE.
 //
 
-export { default as DataLoader } from './loader/DataLoader'
-export { default as Loader } from './loader/Loader'
-export { default as ScriptLoader } from './loader/ScriptLoader'
+import Namespace from '@takram/planck-core/src/Namespace'
+
+import DataLoader from './DataLoader'
+
+export const internal = Namespace('ScriptLoader')
+
+export default class ScriptLoader extends DataLoader {
+  load() {
+    const scope = internal(this)
+    if (scope.promise !== undefined) {
+      return scope.promise
+    }
+    scope.promise = new Promise((resolve, reject) => {
+      super.load().then(request => {
+        const script = document.createElement('script')
+        script.type = 'text/javascript'
+        script.src = this.url
+        script.onload = () => {
+          resolve(request)
+        }
+        script.onerror = () => {
+          reject(request.status)
+        }
+        const scripts = document.getElementsByTagName('script')
+        const target = scripts[scripts.length - 1]
+        target.parentNode.insertBefore(script, target)
+      })
+    })
+    return scope.promise
+  }
+}
