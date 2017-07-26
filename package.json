@@ -1,6 +1,6 @@
 {
   "name": "@takram/planck-loader",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "",
   "repository": "takram-design-engineering/planck-loader",
   "main": "dist/planck-loader.js",
@@ -17,12 +17,9 @@
     "src"
   ],
   "scripts": {
-    "build": "npm-run-all --parallel build:main build:module",
-    "build:main": "npm-run-all main:compile main:uglify",
-    "build:module": "npm-run-all module:compile",
+    "build": "npm-run-all main:compile main:uglify",
     "main:compile": "rollup -c",
     "main:uglify": "uglifyjs --compress --mangle --output dist/planck-loader.min.js dist/planck-loader.js",
-    "module:compile": "rollup -c rollup.config.module.js",
     "test": "npm-run-all lint test:compile test:cloud",
     "test:compile": "rollup -c rollup.config.unit.js",
     "test:local": "mocha --recursive test/unit",
@@ -34,8 +31,8 @@
     "serve": "browser-sync start --server . --files dist --startPath test --no-notify"
   },
   "dependencies": {
-    "@takram/planck-core": "^0.1.14",
-    "@takram/planck-event": "^0.1.12",
+    "@takram/planck-core": "^0.1.15",
+    "@takram/planck-event": "^0.1.13",
     "babel-polyfill": "^6.23.0"
   },
   "devDependencies": {

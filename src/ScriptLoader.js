@@ -22,9 +22,9 @@
 //  DEALINGS IN THE SOFTWARE.
 //
 
-import { Namespace } from '@takram/planck-core'
+import Namespace from '@takram/planck-core/src/Namespace'
 
-import DataLoader from '../loader/DataLoader'
+import DataLoader from './DataLoader'
 
 export const internal = Namespace('ScriptLoader')
 
