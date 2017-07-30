@@ -37,8 +37,8 @@ describe('ScriptLoader', function () {
   })
 
   it('loads script', () => {
+    self.planck_script_loader_test_flag = undefined
     const loader = new ScriptLoader('/test/unit/data/script')
-    expect(self.planck_script_loader_test_flag).undefined
     return expect(loader.load()).fulfilled.then(() => {
       expect(self.planck_script_loader_test_flag).not.undefined
     })
