@@ -1,9 +1,10 @@
 {
   "name": "@takram/planck-loader",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "",
   "repository": "takram-design-engineering/planck-loader",
   "main": "dist/planck-loader.js",
+  "browser": "dist/planck-loader.js",
   "module": "dist/planck-loader.module.js",
   "author": "Shota Matsuda",
   "license": "MIT",
@@ -34,8 +35,8 @@
     "serve": "browser-sync start --server . --files dist --startPath test --no-notify"
   },
   "dependencies": {
-    "@takram/planck-core": "^0.2.0",
-    "@takram/planck-event": "^0.1.15",
+    "@takram/planck-core": "^0.2.1",
+    "@takram/planck-event": "^0.1.16",
     "babel-polyfill": "^6.23.0"
   },
   "devDependencies": {
@@ -49,7 +50,7 @@
     "babel-preset-es2017": "^6.24.1",
     "babel-preset-stage-3": "^6.24.1",
     "browser-sync": "^2.18.13",
-    "chai": "^4.1.0",
+    "chai": "^4.1.1",
     "chai-as-promised": "^7.1.1",
     "chalk": "^2.0.1",
     "eslint": "^3.19.0",
