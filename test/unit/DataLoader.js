@@ -22,6 +22,8 @@
 //  DEALINGS IN THE SOFTWARE.
 //
 
+import 'source-map-support/register'
+
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import sinon from 'sinon'
