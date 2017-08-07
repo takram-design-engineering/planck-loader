@@ -4,6 +4,7 @@
   "description": "",
   "repository": "takram-design-engineering/planck-loader",
   "main": "dist/planck-loader.js",
+  "browser": "dist/planck-loader.js",
   "module": "dist/planck-loader.module.js",
   "author": "Shota Matsuda",
   "license": "MIT",
