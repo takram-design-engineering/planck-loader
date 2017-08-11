@@ -38,6 +38,7 @@ function Namespace() {
     };
 
     if (object[symbol] === undefined) {
+      // eslint-disable-next-line no-param-reassign
       object[symbol] = init({});
     }
     return object[symbol];
@@ -669,6 +670,88 @@ var EventDispatcher = function () {
 
 var internal = Namespace('DataLoader');
 
+function setSize(target, value) {
+  var scope = internal(target);
+  if (value !== scope.size) {
+    scope.size = value;
+    target.dispatchEvent({ type: 'size', target: target });
+  }
+}
+
+function setProgress(target, value) {
+  var scope = internal(target);
+  if (value !== scope.progress) {
+    scope.progress = value;
+    target.dispatchEvent({ type: 'progress', target: target });
+  }
+}
+
+function setDeterminate(target, value) {
+  var scope = internal(target);
+  if (value !== scope.determinate) {
+    scope.determinate = value;
+    target.dispatchEvent({ type: 'determinate', target: target });
+  }
+}
+
+function setCompleted(target, value) {
+  var scope = internal(target);
+  if (value !== scope.completed) {
+    scope.completed = value;
+    target.dispatchEvent({ type: 'completed', target: target });
+  }
+}
+
+function setFailed(target, value) {
+  var scope = internal(target);
+  if (value !== scope.failed) {
+    scope.failed = value;
+    target.dispatchEvent({ type: 'failed', target: target });
+  }
+}
+
+function handleInit(event) {
+  var scope = internal(this);
+  var request = event.target;
+  request.removeEventListener('progress', scope.handlers.init, false);
+  if (request.status !== 200) {
+    return;
+  }
+  if (scope.size === 0) {
+    setSize(this, event.total);
+  }
+  if (scope.size !== 0) {
+    setDeterminate(this, true);
+  }
+}
+
+function handleProgress(event) {
+  var scope = internal(this);
+  if (scope.determinate) {
+    setProgress(this, Math.min(1, event.loaded / scope.size));
+  }
+}
+
+function handleLoadend(event) {
+  var scope = internal(this);
+  var request = event.target;
+  request.removeEventListener('progress', scope.handlers.progress, false);
+  request.removeEventListener('loadend', scope.handlers.loadend, false);
+  if (!scope.determinate) {
+    setDeterminate(this, true);
+  }
+  if (request.status === 200) {
+    setProgress(this, 1);
+    scope.resolve(request);
+    setCompleted(this, true);
+  } else {
+    // Rejecting before setting this as failed gives this status as the promise
+    // rejection reason when aggregated.
+    scope.reject(request.status);
+    setFailed(this, true);
+  }
+}
+
 var DataLoader = function (_EventDispatcher) {
   inherits(DataLoader, _EventDispatcher);
 
@@ -703,7 +786,7 @@ var DataLoader = function (_EventDispatcher) {
         return scope.promise;
       }
       if (this.url === null) {
-        return Promise.reject();
+        return Promise.reject(new Error('Attempt to load without is not set'));
       }
       scope.promise = new Promise(function (resolve, reject) {
         var request = new XMLHttpRequest();
@@ -777,88 +860,6 @@ var DataLoader = function (_EventDispatcher) {
   }]);
   return DataLoader;
 }(EventDispatcher);
-
-function handleInit(event) {
-  var scope = internal(this);
-  var request = event.target;
-  request.removeEventListener('progress', scope.handlers.init, false);
-  if (request.status !== 200) {
-    return;
-  }
-  if (scope.size === 0) {
-    setSize(this, event.total);
-  }
-  if (scope.size !== 0) {
-    setDeterminate(this, true);
-  }
-}
-
-function handleProgress(event) {
-  var scope = internal(this);
-  if (scope.determinate) {
-    setProgress(this, Math.min(1, event.loaded / scope.size));
-  }
-}
-
-function handleLoadend(event) {
-  var scope = internal(this);
-  var request = event.target;
-  request.removeEventListener('progress', scope.handlers.progress, false);
-  request.removeEventListener('loadend', scope.handlers.loadend, false);
-  if (!scope.determinate) {
-    setDeterminate(this, true);
-  }
-  if (request.status === 200) {
-    setProgress(this, 1);
-    scope.resolve(request);
-    setCompleted(this, true);
-  } else {
-    // Rejecting before setting this as failed gives this status as the promise
-    // rejection reason when aggregated.
-    scope.reject(request.status);
-    setFailed(this, true);
-  }
-}
-
-function setSize(target, value) {
-  var scope = internal(target);
-  if (value !== scope.size) {
-    scope.size = value;
-    target.dispatchEvent({ type: 'size', target: target });
-  }
-}
-
-function setProgress(target, value) {
-  var scope = internal(target);
-  if (value !== scope.progress) {
-    scope.progress = value;
-    target.dispatchEvent({ type: 'progress', target: target });
-  }
-}
-
-function setDeterminate(target, value) {
-  var scope = internal(target);
-  if (value !== scope.determinate) {
-    scope.determinate = value;
-    target.dispatchEvent({ type: 'determinate', target: target });
-  }
-}
-
-function setCompleted(target, value) {
-  var scope = internal(target);
-  if (value !== scope.completed) {
-    scope.completed = value;
-    target.dispatchEvent({ type: 'completed', target: target });
-  }
-}
-
-function setFailed(target, value) {
-  var scope = internal(target);
-  if (value !== scope.failed) {
-    scope.failed = value;
-    target.dispatchEvent({ type: 'failed', target: target });
-  }
-}
 
 //
 //  The MIT License
@@ -950,6 +951,90 @@ var ScriptLoader = function (_DataLoader) {
 //
 
 var internal$3 = Namespace('Loader');
+
+function construct(entries) {
+  return entries.map(function (entry) {
+    if (Array.isArray(entry)) {
+      return construct(entry);
+    }
+    if (entry && typeof entry.load === 'function') {
+      return entry;
+    }
+    var url = entry.url || entry;
+    if (url.endsWith('.js')) {
+      return new ScriptLoader(entry);
+    }
+    return new DataLoader(entry);
+  });
+}
+
+function expand(entries) {
+  return entries.reduce(function (loaders, entry) {
+    if (Array.isArray(entry)) {
+      return loaders.concat(expand(entry));
+    }
+    loaders.push(entry);
+    return loaders;
+  }, []);
+}
+
+function updateDeterminate(target) {
+  var scope = internal$3(target);
+  var value = scope.loaders.every(function (loader) {
+    return loader.determinate;
+  });
+  if (value !== scope.determinate) {
+    scope.determinate = value;
+    target.dispatchEvent({ type: 'determinate', target: target });
+  }
+}
+
+function updateCompleted(target) {
+  var scope = internal$3(target);
+  var value = scope.loaders.every(function (loader) {
+    return loader.completed;
+  });
+  if (value !== scope.completed) {
+    scope.completed = value;
+    target.dispatchEvent({ type: 'completed', target: target });
+  }
+}
+
+function updateFailed(target) {
+  var scope = internal$3(target);
+  var value = scope.loaders.some(function (loader) {
+    return loader.failed;
+  });
+  if (value !== scope.failed) {
+    scope.failed = value;
+    target.dispatchEvent({ type: 'failed', target: target });
+
+    // Abort all the loaders
+    if (scope.failed) {
+      target.abort();
+    }
+  }
+}
+
+function handleSize(event) {
+  this.dispatchEvent({ type: 'size', target: this });
+}
+
+function handleProgress$1(event) {
+  this.dispatchEvent({ type: 'progress', target: this });
+}
+
+function handleDeterminate(event) {
+  updateDeterminate(this);
+}
+
+function handleCompleted(event) {
+  updateCompleted(this);
+}
+
+function handleFailed(event) {
+  updateFailed(this);
+}
 
 var Loader = function (_EventDispatcher) {
   inherits(Loader, _EventDispatcher);
@@ -1120,90 +1205,6 @@ var Loader = function (_EventDispatcher) {
   }]);
   return Loader;
 }(EventDispatcher);
-
-function construct(entries) {
-  return entries.map(function (entry) {
-    if (Array.isArray(entry)) {
-      return construct(entry);
-    }
-    if (entry && typeof entry.load === 'function') {
-      return entry;
-    }
-    var url = entry.url || entry;
-    if (url.endsWith('.js')) {
-      return new ScriptLoader(entry);
-    }
-    return new DataLoader(entry);
-  });
-}
-
-function expand(entries) {
-  return entries.reduce(function (loaders, entry) {
-    if (Array.isArray(entry)) {
-      return loaders.concat(expand(entry));
-    }
-    loaders.push(entry);
-    return loaders;
-  }, []);
-}
-
-function handleSize(event) {
-  this.dispatchEvent({ type: 'size', target: this });
-}
-
-function handleProgress$1(event) {
-  this.dispatchEvent({ type: 'progress', target: this });
-}
-
-function handleDeterminate(event) {
-  updateDeterminate(this);
-}
-
-function handleCompleted(event) {
-  updateCompleted(this);
-}
-
-function handleFailed(event) {
-  updateFailed(this);
-}
-
-function updateDeterminate(target) {
-  var scope = internal$3(target);
-  var value = scope.loaders.every(function (loader) {
-    return loader.determinate;
-  });
-  if (value !== scope.determinate) {
-    scope.determinate = value;
-    target.dispatchEvent({ type: 'determinate', target: target });
-  }
-}
-
-function updateCompleted(target) {
-  var scope = internal$3(target);
-  var value = scope.loaders.every(function (loader) {
-    return loader.completed;
-  });
-  if (value !== scope.completed) {
-    scope.completed = value;
-    target.dispatchEvent({ type: 'completed', target: target });
-  }
-}
-
-function updateFailed(target) {
-  var scope = internal$3(target);
-  var value = scope.loaders.some(function (loader) {
-    return loader.failed;
-  });
-  if (value !== scope.failed) {
-    scope.failed = value;
-    target.dispatchEvent({ type: 'failed', target: target });
-
-    // Abort all the loaders
-    if (scope.failed) {
-      target.abort();
-    }
-  }
-}
 
 //
 //  The MIT License
