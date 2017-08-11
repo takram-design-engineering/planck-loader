@@ -30,6 +30,90 @@ import ScriptLoader from './ScriptLoader'
 
 export const internal = Namespace('Loader')
 
+function construct(entries) {
+  return entries.map(entry => {
+    if (Array.isArray(entry)) {
+      return construct(entry)
+    }
+    if (entry && typeof entry.load === 'function') {
+      return entry
+    }
+    const url = entry.url || entry
+    if (url.endsWith('.js')) {
+      return new ScriptLoader(entry)
+    }
+    return new DataLoader(entry)
+  })
+}
+
+function expand(entries) {
+  return entries.reduce((loaders, entry) => {
+    if (Array.isArray(entry)) {
+      return loaders.concat(expand(entry))
+    }
+    loaders.push(entry)
+    return loaders
+  }, [])
+}
+
+function updateDeterminate(target) {
+  const scope = internal(target)
+  const value = scope.loaders.every(loader => {
+    return loader.determinate
+  })
+  if (value !== scope.determinate) {
+    scope.determinate = value
+    target.dispatchEvent({ type: 'determinate', target })
+  }
+}
+
+function updateCompleted(target) {
+  const scope = internal(target)
+  const value = scope.loaders.every(loader => {
+    return loader.completed
+  })
+  if (value !== scope.completed) {
+    scope.completed = value
+    target.dispatchEvent({ type: 'completed', target })
+  }
+}
+
+function updateFailed(target) {
+  const scope = internal(target)
+  const value = scope.loaders.some(loader => {
+    return loader.failed
+  })
+  if (value !== scope.failed) {
+    scope.failed = value
+    target.dispatchEvent({ type: 'failed', target })
+
+    // Abort all the loaders
+    if (scope.failed) {
+      target.abort()
+    }
+  }
+}
+
+function handleSize(event) {
+  this.dispatchEvent({ type: 'size', target: this })
+}
+
+function handleProgress(event) {
+  this.dispatchEvent({ type: 'progress', target: this })
+}
+
+function handleDeterminate(event) {
+  updateDeterminate(this)
+}
+
+function handleCompleted(event) {
+  updateCompleted(this)
+}
+
+function handleFailed(event) {
+  updateFailed(this)
+}
+
 export default class Loader extends EventDispatcher {
   constructor(...sequence) {
     super()
@@ -165,89 +249,5 @@ export default class Loader extends EventDispatcher {
         })
       })
     }, null)
-  }
-}
-
-function construct(entries) {
-  return entries.map(entry => {
-    if (Array.isArray(entry)) {
-      return construct(entry)
-    }
-    if (entry && typeof entry.load === 'function') {
-      return entry
-    }
-    const url = entry.url || entry
-    if (url.endsWith('.js')) {
-      return new ScriptLoader(entry)
-    }
-    return new DataLoader(entry)
-  })
-}
-
-function expand(entries) {
-  return entries.reduce((loaders, entry) => {
-    if (Array.isArray(entry)) {
-      return loaders.concat(expand(entry))
-    }
-    loaders.push(entry)
-    return loaders
-  }, [])
-}
-
-function handleSize(event) {
-  this.dispatchEvent({ type: 'size', target: this })
-}
-
-function handleProgress(event) {
-  this.dispatchEvent({ type: 'progress', target: this })
-}
-
-function handleDeterminate(event) {
-  updateDeterminate(this)
-}
-
-function handleCompleted(event) {
-  updateCompleted(this)
-}
-
-function handleFailed(event) {
-  updateFailed(this)
-}
-
-function updateDeterminate(target) {
-  const scope = internal(target)
-  const value = scope.loaders.every(loader => {
-    return loader.determinate
-  })
-  if (value !== scope.determinate) {
-    scope.determinate = value
-    target.dispatchEvent({ type: 'determinate', target })
-  }
-}
-
-function updateCompleted(target) {
-  const scope = internal(target)
-  const value = scope.loaders.every(loader => {
-    return loader.completed
-  })
-  if (value !== scope.completed) {
-    scope.completed = value
-    target.dispatchEvent({ type: 'completed', target })
-  }
-}
-
-function updateFailed(target) {
-  const scope = internal(target)
-  const value = scope.loaders.some(loader => {
-    return loader.failed
-  })
-  if (value !== scope.failed) {
-    scope.failed = value
-    target.dispatchEvent({ type: 'failed', target })
-
-    // Abort all the loaders
-    if (scope.failed) {
-      target.abort()
-    }
   }
 }

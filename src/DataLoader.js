@@ -27,6 +27,88 @@ import Namespace from '@takram/planck-core/src/Namespace'
 
 export const internal = Namespace('DataLoader')
 
+function setSize(target, value) {
+  const scope = internal(target)
+  if (value !== scope.size) {
+    scope.size = value
+    target.dispatchEvent({ type: 'size', target })
+  }
+}
+
+function setProgress(target, value) {
+  const scope = internal(target)
+  if (value !== scope.progress) {
+    scope.progress = value
+    target.dispatchEvent({ type: 'progress', target })
+  }
+}
+
+function setDeterminate(target, value) {
+  const scope = internal(target)
+  if (value !== scope.determinate) {
+    scope.determinate = value
+    target.dispatchEvent({ type: 'determinate', target })
+  }
+}
+
+function setCompleted(target, value) {
+  const scope = internal(target)
+  if (value !== scope.completed) {
+    scope.completed = value
+    target.dispatchEvent({ type: 'completed', target })
+  }
+}
+
+function setFailed(target, value) {
+  const scope = internal(target)
+  if (value !== scope.failed) {
+    scope.failed = value
+    target.dispatchEvent({ type: 'failed', target })
+  }
+}
+
+function handleInit(event) {
+  const scope = internal(this)
+  const request = event.target
+  request.removeEventListener('progress', scope.handlers.init, false)
+  if (request.status !== 200) {
+    return
+  }
+  if (scope.size === 0) {
+    setSize(this, event.total)
+  }
+  if (scope.size !== 0) {
+    setDeterminate(this, true)
+  }
+}
+
+function handleProgress(event) {
+  const scope = internal(this)
+  if (scope.determinate) {
+    setProgress(this, Math.min(1, event.loaded / scope.size))
+  }
+}
+
+function handleLoadend(event) {
+  const scope = internal(this)
+  const request = event.target
+  request.removeEventListener('progress', scope.handlers.progress, false)
+  request.removeEventListener('loadend', scope.handlers.loadend, false)
+  if (!scope.determinate) {
+    setDeterminate(this, true)
+  }
+  if (request.status === 200) {
+    setProgress(this, 1)
+    scope.resolve(request)
+    setCompleted(this, true)
+  } else {
+    // Rejecting before setting this as failed gives this status as the promise
+    // rejection reason when aggregated.
+    scope.reject(request.status)
+    setFailed(this, true)
+  }
+}
+
 export default class DataLoader extends EventDispatcher {
   constructor(target) {
     super()
@@ -86,7 +168,7 @@ export default class DataLoader extends EventDispatcher {
       return scope.promise
     }
     if (this.url === null) {
-      return Promise.reject()
+      return Promise.reject(new Error('Attempt to load without is not set'))
     }
     scope.promise = new Promise((resolve, reject) => {
       const request = new XMLHttpRequest()
@@ -113,87 +195,5 @@ export default class DataLoader extends EventDispatcher {
       return
     }
     scope.request.abort()
-  }
-}
-
-function handleInit(event) {
-  const scope = internal(this)
-  const request = event.target
-  request.removeEventListener('progress', scope.handlers.init, false)
-  if (request.status !== 200) {
-    return
-  }
-  if (scope.size === 0) {
-    setSize(this, event.total)
-  }
-  if (scope.size !== 0) {
-    setDeterminate(this, true)
-  }
-}
-
-function handleProgress(event) {
-  const scope = internal(this)
-  if (scope.determinate) {
-    setProgress(this, Math.min(1, event.loaded / scope.size))
-  }
-}
-
-function handleLoadend(event) {
-  const scope = internal(this)
-  const request = event.target
-  request.removeEventListener('progress', scope.handlers.progress, false)
-  request.removeEventListener('loadend', scope.handlers.loadend, false)
-  if (!scope.determinate) {
-    setDeterminate(this, true)
-  }
-  if (request.status === 200) {
-    setProgress(this, 1)
-    scope.resolve(request)
-    setCompleted(this, true)
-  } else {
-    // Rejecting before setting this as failed gives this status as the promise
-    // rejection reason when aggregated.
-    scope.reject(request.status)
-    setFailed(this, true)
-  }
-}
-
-function setSize(target, value) {
-  const scope = internal(target)
-  if (value !== scope.size) {
-    scope.size = value
-    target.dispatchEvent({ type: 'size', target })
-  }
-}
-
-function setProgress(target, value) {
-  const scope = internal(target)
-  if (value !== scope.progress) {
-    scope.progress = value
-    target.dispatchEvent({ type: 'progress', target })
-  }
-}
-
-function setDeterminate(target, value) {
-  const scope = internal(target)
-  if (value !== scope.determinate) {
-    scope.determinate = value
-    target.dispatchEvent({ type: 'determinate', target })
-  }
-}
-
-function setCompleted(target, value) {
-  const scope = internal(target)
-  if (value !== scope.completed) {
-    scope.completed = value
-    target.dispatchEvent({ type: 'completed', target })
-  }
-}
-
-function setFailed(target, value) {
-  const scope = internal(target)
-  if (value !== scope.failed) {
-    scope.failed = value
-    target.dispatchEvent({ type: 'failed', target })
   }
 }
