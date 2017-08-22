@@ -4,47 +4,6 @@
 	(factory((global.Planck = global.Planck || {})));
 }(this, (function (exports) { 'use strict';
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
-
-function Namespace() {
-  var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
-
-  var symbol = Symbol(name);
-  return function namespace(object) {
-    var init = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function (data) {
-      return data;
-    };
-
-    if (object[symbol] === undefined) {
-      // eslint-disable-next-line no-param-reassign
-      object[symbol] = init({});
-    }
-    return object[symbol];
-  };
-}
-
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
 } : function (obj) {
@@ -238,6 +197,226 @@ var toConsumableArray = function (arr) {
   }
 };
 
+var _cachedApplicationRef = Symbol('_cachedApplicationRef');
+var _mixinRef = Symbol('_mixinRef');
+var _originalMixin = Symbol('_originalMixin');
+
+/**
+ * Sets the prototype of mixin to wrapper so that properties set on mixin are
+ * inherited by the wrapper.
+ *
+ * This is needed in order to implement @@hasInstance as a decorator function.
+ */
+var wrap = function wrap(mixin, wrapper) {
+  Object.setPrototypeOf(wrapper, mixin);
+  if (!mixin[_originalMixin]) {
+    mixin[_originalMixin] = mixin;
+  }
+  return wrapper;
+};
+
+/**
+ * Decorates mixin so that it caches its applications. When applied multiple
+ * times to the same superclass, mixin will only create one subclass and
+ * memoize it.
+ */
+var Cached = function Cached(mixin) {
+  return wrap(mixin, function (superclass) {
+    // Get or create a symbol used to look up a previous application of mixin
+    // to the class. This symbol is unique per mixin definition, so a class will have N
+    // applicationRefs if it has had N mixins applied to it. A mixin will have
+    // exactly one _cachedApplicationRef used to store its applications.
+    var applicationRef = mixin[_cachedApplicationRef];
+    if (!applicationRef) {
+      applicationRef = mixin[_cachedApplicationRef] = Symbol(mixin.name);
+    }
+    // Look up an existing application of `mixin` to `c`, return it if found.
+    if (superclass.hasOwnProperty(applicationRef)) {
+      return superclass[applicationRef];
+    }
+    // Apply the mixin
+    var application = mixin(superclass);
+    // Cache the mixin application on the superclass
+    superclass[applicationRef] = application;
+    return application;
+  });
+};
+
+/**
+ * Adds @@hasInstance (ES2015 instanceof support) to mixin.
+ * Note: @@hasInstance is not supported in any browsers yet.
+ */
+var HasInstance = function HasInstance(mixin) {
+  if (Symbol.hasInstance && !mixin.hasOwnProperty(Symbol.hasInstance)) {
+    Object.defineProperty(mixin, Symbol.hasInstance, {
+      value: function value(o) {
+        var originalMixin = this[_originalMixin];
+        while (o != null) {
+          if (o.hasOwnProperty(_mixinRef) && o[_mixinRef] === originalMixin) {
+            return true;
+          }
+          o = Object.getPrototypeOf(o);
+        }
+        return false;
+      }
+    });
+  }
+  return mixin;
+};
+
+/**
+ * A basic mixin decorator that sets up a reference from mixin applications
+ * to the mixin defintion for use by other mixin decorators.
+ */
+var BareMixin = function BareMixin(mixin) {
+  return wrap(mixin, function (superclass) {
+    // Apply the mixin
+    var application = mixin(superclass);
+
+    // Attach a reference from mixin applition to wrapped mixin for RTTI
+    // mixin[@@hasInstance] should use this.
+    application.prototype[_mixinRef] = mixin[_originalMixin];
+    return application;
+  });
+};
+
+/**
+ * Decorates a mixin function to add application caching and instanceof
+ * support.
+ */
+var Mixin = function Mixin(mixin) {
+  return Cached(HasInstance(BareMixin(mixin)));
+};
+
+var mix = function mix(superClass) {
+  return new MixinBuilder(superClass);
+};
+
+var MixinBuilder = function () {
+  function MixinBuilder(superclass) {
+    classCallCheck(this, MixinBuilder);
+
+    this.superclass = superclass;
+  }
+
+  createClass(MixinBuilder, [{
+    key: 'with',
+    value: function _with() {
+      return Array.from(arguments).reduce(function (c, m) {
+        return m(c);
+      }, this.superclass);
+    }
+  }]);
+  return MixinBuilder;
+}();
+
+//
+//  The MIT License
+//
+//  Copyright (C) 2016-Present Shota Matsuda
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a
+//  copy of this software and associated documentation files (the "Software"),
+//  to deal in the Software without restriction, including without limitation
+//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//  and/or sell copies of the Software, and to permit persons to whom the
+//  Software is furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//  DEALINGS IN THE SOFTWARE.
+//
+
+function Namespace() {
+  var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+
+  var symbol = Symbol(name);
+  return function namespace(object) {
+    var init = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function (data) {
+      return data;
+    };
+
+    if (object[symbol] === undefined) {
+      // eslint-disable-next-line no-param-reassign
+      object[symbol] = init({});
+    }
+    return object[symbol];
+  };
+}
+
+//
+//  The MIT License
+//
+//  Copyright (C) 2016-Present Shota Matsuda
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a
+//  copy of this software and associated documentation files (the "Software"),
+//  to deal in the Software without restriction, including without limitation
+//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//  and/or sell copies of the Software, and to permit persons to whom the
+//  Software is furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//  DEALINGS IN THE SOFTWARE.
+//
+
+var environmentType = function () {
+  try {
+    // eslint-disable-next-line no-new-func
+    if (new Function('return this === window')()) {
+      return 'browser';
+    }
+  } catch (error) {}
+  try {
+    // eslint-disable-next-line no-new-func
+    if (new Function('return this === self')()) {
+      return 'worker';
+    }
+  } catch (error) {}
+  try {
+    // eslint-disable-next-line no-new-func
+    if (new Function('return this === global')()) {
+      return 'node';
+    }
+  } catch (error) {}
+  return undefined;
+}();
+
+var environmentSelf = void 0;
+switch (environmentType) {
+  case 'browser':
+    environmentSelf = window;
+    break;
+  case 'worker':
+    environmentSelf = self;
+    break;
+  case 'node':
+    environmentSelf = global;
+    break;
+  default:
+    break;
+}
+
+var Environment = {
+  type: environmentType,
+  self: environmentSelf
+};
+
 //
 //  The MIT License
 //
@@ -280,18 +459,22 @@ var Event = function () {
           _ref$captures = _ref.captures,
           captures = _ref$captures === undefined ? false : _ref$captures,
           _ref$bubbles = _ref.bubbles,
-          bubbles = _ref$bubbles === undefined ? true : _ref$bubbles;
+          bubbles = _ref$bubbles === undefined ? true : _ref$bubbles,
+          _ref$cancelable = _ref.cancelable,
+          cancelable = _ref$cancelable === undefined ? true : _ref$cancelable;
 
       var scope = internal$2(this);
       scope.type = type || null;
       scope.captures = !!captures;
       scope.bubbles = !!bubbles;
-      scope.timestamp = Date.now();
+      scope.cancelable = !!cancelable;
+      scope.timeStamp = Environment.self.performance && Environment.self.performance.now && Environment.self.performance.now() || Date.now();
       scope.propagationStopped = false;
       scope.immediatePropagationStopped = false;
+      scope.defaultPrevented = false;
       scope.target = null;
       scope.currentTarget = null;
-      scope.phase = null;
+      scope.eventPhase = null;
       return this;
     }
   }, {
@@ -306,6 +489,14 @@ var Event = function () {
       var scope = internal$2(this);
       scope.propagationStopped = true;
       scope.immediatePropagationStopped = true;
+    }
+  }, {
+    key: 'preventDefault',
+    value: function preventDefault() {
+      if (this.cancelable) {
+        var scope = internal$2(this);
+        scope.defaultPrevented = true;
+      }
     }
   }, {
     key: 'type',
@@ -326,10 +517,10 @@ var Event = function () {
       return scope.currentTarget;
     }
   }, {
-    key: 'phase',
+    key: 'eventPhase',
     get: function get$$1() {
       var scope = internal$2(this);
-      return scope.phase;
+      return scope.eventPhase;
     }
   }, {
     key: 'captures',
@@ -344,10 +535,16 @@ var Event = function () {
       return scope.bubbles;
     }
   }, {
-    key: 'timestamp',
+    key: 'cancelable',
     get: function get$$1() {
       var scope = internal$2(this);
-      return scope.timestamp;
+      return scope.cancelable;
+    }
+  }, {
+    key: 'timeStamp',
+    get: function get$$1() {
+      var scope = internal$2(this);
+      return scope.timeStamp;
     }
   }, {
     key: 'propagationStopped',
@@ -360,6 +557,12 @@ var Event = function () {
     get: function get$$1() {
       var scope = internal$2(this);
       return scope.immediatePropagationStopped;
+    }
+  }, {
+    key: 'defaultPrevented',
+    get: function get$$1() {
+      var scope = internal$2(this);
+      return scope.defaultPrevented;
     }
   }]);
   return Event;
@@ -376,8 +579,8 @@ function modifyEvent(event) {
       scope.currentTarget = value || null;
     },
 
-    set phase(value) {
-      scope.phase = value || null;
+    set eventPhase(value) {
+      scope.eventPhase = value || null;
     }
   };
 }
@@ -521,7 +724,7 @@ var GenericEvent = function (_CustomEvent) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$1 = Namespace('EventDispatcher');
+var internal$1 = Namespace('EventDispatcherMixin');
 
 function handleEvent(event, listener) {
   if (typeof listener === 'function') {
@@ -533,116 +736,171 @@ function handleEvent(event, listener) {
   }
 }
 
-var EventDispatcher = function () {
+// eslint-disable-next-line arrow-parens
+var EventDispatcherMixin = Mixin(function (S) {
+  return function (_S) {
+    inherits(EventDispatcherMixin, _S);
+
+    function EventDispatcherMixin() {
+      var _ref;
+
+      classCallCheck(this, EventDispatcherMixin);
+
+      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      var _this = possibleConstructorReturn(this, (_ref = EventDispatcherMixin.__proto__ || Object.getPrototypeOf(EventDispatcherMixin)).call.apply(_ref, [this].concat(args)));
+
+      var scope = internal$1(_this);
+      scope.listeners = {};
+      return _this;
+    }
+
+    createClass(EventDispatcherMixin, [{
+      key: 'addEventListener',
+      value: function addEventListener(type, listener) {
+        var capture = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+        if (typeof listener !== 'function' && (typeof listener === 'undefined' ? 'undefined' : _typeof(listener)) !== 'object') {
+          throw new Error('Attempt to add non-function non-object listener');
+        }
+        var scope = internal$1(this);
+        if (scope.listeners[type] === undefined) {
+          scope.listeners[type] = { bubble: [], capture: [] };
+        }
+        var listeners = capture ? scope.listeners[type].capture : scope.listeners[type].bubble;
+        if (listeners.includes(listener)) {
+          return;
+        }
+        listeners.push(listener);
+      }
+    }, {
+      key: 'removeEventListener',
+      value: function removeEventListener(type, listener) {
+        var capture = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+        var scope = internal$1(this);
+        if (scope.listeners[type] === undefined) {
+          return;
+        }
+        var listeners = capture ? scope.listeners[type].capture : scope.listeners[type].bubble;
+        var index = listeners.indexOf(listener);
+        if (index !== -1) {
+          listeners.splice(index, 1);
+        }
+      }
+    }, {
+      key: 'on',
+      value: function on() {
+        this.addEventListener.apply(this, arguments);
+        return this;
+      }
+    }, {
+      key: 'off',
+      value: function off() {
+        this.removeEventListener.apply(this, arguments);
+        return this;
+      }
+    }, {
+      key: 'once',
+      value: function once(type, listener) {
+        for (var _len2 = arguments.length, rest = Array(_len2 > 2 ? _len2 - 2 : 0), _key2 = 2; _key2 < _len2; _key2++) {
+          rest[_key2 - 2] = arguments[_key2];
+        }
+
+        var _this2 = this;
+
+        var delegate = function delegate(event) {
+          handleEvent(event, listener);
+          _this2.removeEventListener.apply(_this2, [type, delegate].concat(rest));
+        };
+        this.addEventListener.apply(this, [type, delegate].concat(rest));
+        return this;
+      }
+    }, {
+      key: 'dispatchEvent',
+      value: function dispatchEvent(object) {
+        var event = object;
+        if (!(event instanceof Event)) {
+          event = new GenericEvent(object);
+        }
+        var modifier = modifyEvent(event);
+
+        // Set target to this when it's not set
+        if (!event.target) {
+          modifier.target = this;
+        }
+        // Current target should be always this
+        modifier.currentTarget = this;
+
+        var scope = internal$1(this);
+        var listeners = scope.listeners[event.type];
+        if (listeners === undefined) {
+          return;
+        }
+        var eventPhase = event.eventPhase;
+        if (!eventPhase || eventPhase === 'target' || eventPhase === 'capture') {
+          [].concat(toConsumableArray(listeners.capture)).some(function (listener) {
+            handleEvent(event, listener);
+            return event.immediatePropagationStopped;
+          });
+        }
+        if (event.immediatePropagationStopped) {
+          return;
+        }
+        if (!eventPhase || eventPhase === 'target' || eventPhase === 'bubble') {
+          [].concat(toConsumableArray(listeners.bubble)).some(function (listener) {
+            handleEvent(event, listener);
+            return event.immediatePropagationStopped;
+          });
+        }
+      }
+    }]);
+    return EventDispatcherMixin;
+  }(S);
+});
+
+//
+//  The MIT License
+//
+//  Copyright (C) 2016-Present Shota Matsuda
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a
+//  copy of this software and associated documentation files (the "Software"),
+//  to deal in the Software without restriction, including without limitation
+//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//  and/or sell copies of the Software, and to permit persons to whom the
+//  Software is furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//  DEALINGS IN THE SOFTWARE.
+//
+
+var EventDispatcher = function (_mix$with) {
+  inherits(EventDispatcher, _mix$with);
+
   function EventDispatcher() {
     classCallCheck(this, EventDispatcher);
-
-    var scope = internal$1(this);
-    scope.listeners = {};
+    return possibleConstructorReturn(this, (EventDispatcher.__proto__ || Object.getPrototypeOf(EventDispatcher)).apply(this, arguments));
   }
 
-  createClass(EventDispatcher, [{
-    key: 'addEventListener',
-    value: function addEventListener(type, listener) {
-      var capture = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-
-      if (typeof listener !== 'function' && (typeof listener === 'undefined' ? 'undefined' : _typeof(listener)) !== 'object') {
-        throw new Error('Attempt to add non-function non-object listener');
-      }
-      var scope = internal$1(this);
-      if (scope.listeners[type] === undefined) {
-        scope.listeners[type] = { bubble: [], capture: [] };
-      }
-      var listeners = capture ? scope.listeners[type].capture : scope.listeners[type].bubble;
-      if (listeners.includes(listener)) {
-        return;
-      }
-      listeners.push(listener);
-    }
-  }, {
-    key: 'removeEventListener',
-    value: function removeEventListener(type, listener) {
-      var capture = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-
-      var scope = internal$1(this);
-      if (scope.listeners[type] === undefined) {
-        return;
-      }
-      var listeners = capture ? scope.listeners[type].capture : scope.listeners[type].bubble;
-      var index = listeners.indexOf(listener);
-      if (index !== -1) {
-        listeners.splice(index, 1);
-      }
-    }
-  }, {
-    key: 'on',
-    value: function on() {
-      this.addEventListener.apply(this, arguments);
-      return this;
-    }
-  }, {
-    key: 'off',
-    value: function off() {
-      this.removeEventListener.apply(this, arguments);
-      return this;
-    }
-  }, {
-    key: 'once',
-    value: function once(type, listener) {
-      for (var _len = arguments.length, rest = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-        rest[_key - 2] = arguments[_key];
-      }
-
-      var _this = this;
-
-      var delegate = function delegate(event) {
-        handleEvent(event, listener);
-        _this.removeEventListener.apply(_this, [type, delegate].concat(rest));
-      };
-      this.addEventListener.apply(this, [type, delegate].concat(rest));
-      return this;
-    }
-  }, {
-    key: 'dispatchEvent',
-    value: function dispatchEvent(object) {
-      var event = object;
-      if (!(event instanceof Event)) {
-        event = new GenericEvent(object);
-      }
-      var modifier = modifyEvent(event);
-
-      // Set target to this when it's not set
-      if (!event.target) {
-        modifier.target = this;
-      }
-      // Current target should be always this
-      modifier.currentTarget = this;
-
-      var scope = internal$1(this);
-      var listeners = scope.listeners[event.type];
-      if (listeners === undefined) {
-        return;
-      }
-      var phase = event.phase;
-      if (!phase || phase === 'target' || phase === 'capture') {
-        [].concat(toConsumableArray(listeners.capture)).some(function (listener) {
-          handleEvent(event, listener);
-          return event.immediatePropagationStopped;
-        });
-      }
-      if (event.immediatePropagationStopped) {
-        return;
-      }
-      if (!phase || phase === 'target' || phase === 'bubble') {
-        [].concat(toConsumableArray(listeners.bubble)).some(function (listener) {
-          handleEvent(event, listener);
-          return event.immediatePropagationStopped;
-        });
-      }
-    }
-  }]);
   return EventDispatcher;
-}();
+}(mix(function () {
+  function _class() {
+    classCallCheck(this, _class);
+  }
+
+  return _class;
+}()).with(EventDispatcherMixin));
 
 //
 //  The MIT License
