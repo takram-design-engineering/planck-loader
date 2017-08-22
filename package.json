@@ -1,6 +1,6 @@
 {
   "name": "@takram/planck-loader",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "",
   "repository": "takram-design-engineering/planck-loader",
   "main": "dist/planck-loader.js",
