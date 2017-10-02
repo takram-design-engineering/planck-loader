@@ -1,7 +1,7 @@
 {
   "name": "@takram/planck-loader",
   "version": "0.2.1",
-  "description": "",
+  "description": "Provides for parallel and sequential data loading and progress observation",
   "repository": "takram-design-engineering/planck-loader",
   "main": "dist/planck-loader.js",
   "browser": "dist/planck-loader.js",
