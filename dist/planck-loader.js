@@ -1006,7 +1006,7 @@ function setSize(target, value) {
   var scope = internal(target);
   if (value !== scope.size) {
     scope.size = value;
-    target.dispatchEvent({ type: 'size', target: target });
+    target.dispatchEvent({ type: 'size' });
   }
 }
 
@@ -1014,7 +1014,7 @@ function setProgress(target, value) {
   var scope = internal(target);
   if (value !== scope.progress) {
     scope.progress = value;
-    target.dispatchEvent({ type: 'progress', target: target });
+    target.dispatchEvent({ type: 'progress' });
   }
 }
 
@@ -1022,7 +1022,7 @@ function setDeterminate(target, value) {
   var scope = internal(target);
   if (value !== scope.determinate) {
     scope.determinate = value;
-    target.dispatchEvent({ type: 'determinate', target: target });
+    target.dispatchEvent({ type: 'determinate' });
   }
 }
 
@@ -1030,7 +1030,7 @@ function setCompleted(target, value) {
   var scope = internal(target);
   if (value !== scope.completed) {
     scope.completed = value;
-    target.dispatchEvent({ type: 'completed', target: target });
+    target.dispatchEvent({ type: 'complete' });
   }
 }
 
@@ -1038,7 +1038,7 @@ function setFailed(target, value) {
   var scope = internal(target);
   if (value !== scope.failed) {
     scope.failed = value;
-    target.dispatchEvent({ type: 'failed', target: target });
+    target.dispatchEvent({ type: 'error' });
   }
 }
 
@@ -1242,9 +1242,11 @@ var ScriptLoader = function (_DataLoader) {
           script.type = 'text/javascript';
           script.src = _this2.url;
           script.onload = function () {
+            _this2.dispatchEvent({ type: 'load' });
             resolve(request);
           };
           script.onerror = function () {
+            _this2.dispatchEvent({ type: 'error' });
             reject(request.status);
           };
           var scripts = document.getElementsByTagName('script');
@@ -1317,7 +1319,7 @@ function updateDeterminate(target) {
   });
   if (value !== scope.determinate) {
     scope.determinate = value;
-    target.dispatchEvent({ type: 'determinate', target: target });
+    target.dispatchEvent({ type: 'determinate' });
   }
 }
 
@@ -1328,7 +1330,7 @@ function updateCompleted(target) {
   });
   if (value !== scope.completed) {
     scope.completed = value;
-    target.dispatchEvent({ type: 'completed', target: target });
+    target.dispatchEvent({ type: 'complete' });
   }
 }
 
@@ -1339,7 +1341,7 @@ function updateFailed(target) {
   });
   if (value !== scope.failed) {
     scope.failed = value;
-    target.dispatchEvent({ type: 'failed', target: target });
+    target.dispatchEvent({ type: 'error' });
 
     // Abort all the loaders
     if (scope.failed) {
@@ -1349,11 +1351,11 @@ function updateFailed(target) {
 }
 
 function handleSize(event) {
-  this.dispatchEvent({ type: 'size', target: this });
+  this.dispatchEvent({ type: 'size' });
 }
 
 function handleProgress$1(event) {
-  this.dispatchEvent({ type: 'progress', target: this });
+  this.dispatchEvent({ type: 'progress' });
 }
 
 function handleDeterminate(event) {
@@ -1398,8 +1400,8 @@ var Loader = function (_EventDispatcher) {
       loader.addEventListener('size', scope.handlers.size, false);
       loader.addEventListener('progress', scope.handlers.progress, false);
       loader.addEventListener('determinate', scope.handlers.determinate, false);
-      loader.addEventListener('completed', scope.handlers.completed, false);
-      loader.addEventListener('failed', scope.handlers.failed, false);
+      loader.addEventListener('complete', scope.handlers.completed, false);
+      loader.addEventListener('error', scope.handlers.failed, false);
     });
     return _this;
   }
