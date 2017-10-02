@@ -14,7 +14,118 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 
 
+var asyncGenerator = function () {
+  function AwaitValue(value) {
+    this.value = value;
+  }
 
+  function AsyncGenerator(gen) {
+    var front, back;
+
+    function send(key, arg) {
+      return new Promise(function (resolve, reject) {
+        var request = {
+          key: key,
+          arg: arg,
+          resolve: resolve,
+          reject: reject,
+          next: null
+        };
+
+        if (back) {
+          back = back.next = request;
+        } else {
+          front = back = request;
+          resume(key, arg);
+        }
+      });
+    }
+
+    function resume(key, arg) {
+      try {
+        var result = gen[key](arg);
+        var value = result.value;
+
+        if (value instanceof AwaitValue) {
+          Promise.resolve(value.value).then(function (arg) {
+            resume("next", arg);
+          }, function (arg) {
+            resume("throw", arg);
+          });
+        } else {
+          settle(result.done ? "return" : "normal", result.value);
+        }
+      } catch (err) {
+        settle("throw", err);
+      }
+    }
+
+    function settle(type, value) {
+      switch (type) {
+        case "return":
+          front.resolve({
+            value: value,
+            done: true
+          });
+          break;
+
+        case "throw":
+          front.reject(value);
+          break;
+
+        default:
+          front.resolve({
+            value: value,
+            done: false
+          });
+          break;
+      }
+
+      front = front.next;
+
+      if (front) {
+        resume(front.key, front.arg);
+      } else {
+        back = null;
+      }
+    }
+
+    this._invoke = send;
+
+    if (typeof gen.return !== "function") {
+      this.return = undefined;
+    }
+  }
+
+  if (typeof Symbol === "function" && Symbol.asyncIterator) {
+    AsyncGenerator.prototype[Symbol.asyncIterator] = function () {
+      return this;
+    };
+  }
+
+  AsyncGenerator.prototype.next = function (arg) {
+    return this._invoke("next", arg);
+  };
+
+  AsyncGenerator.prototype.throw = function (arg) {
+    return this._invoke("throw", arg);
+  };
+
+  AsyncGenerator.prototype.return = function (arg) {
+    return this._invoke("return", arg);
+  };
+
+  return {
+    wrap: function (fn) {
+      return function () {
+        return new AsyncGenerator(fn.apply(this, arguments));
+      };
+    },
+    await: function (value) {
+      return new AwaitValue(value);
+    }
+  };
+}();
 
 
 
@@ -137,43 +248,7 @@ var possibleConstructorReturn = function (self, call) {
 
 
 
-var slicedToArray = function () {
-  function sliceIterator(arr, i) {
-    var _arr = [];
-    var _n = true;
-    var _d = false;
-    var _e = undefined;
 
-    try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-        _arr.push(_s.value);
-
-        if (i && _arr.length === i) break;
-      }
-    } catch (err) {
-      _d = true;
-      _e = err;
-    } finally {
-      try {
-        if (!_n && _i["return"]) _i["return"]();
-      } finally {
-        if (_d) throw _e;
-      }
-    }
-
-    return _arr;
-  }
-
-  return function (arr, i) {
-    if (Array.isArray(arr)) {
-      return arr;
-    } else if (Symbol.iterator in Object(arr)) {
-      return sliceIterator(arr, i);
-    } else {
-      throw new TypeError("Invalid attempt to destructure non-iterable instance");
-    }
-  };
-}();
 
 
 
@@ -196,6 +271,8 @@ var toConsumableArray = function (arr) {
     return Array.from(arr);
   }
 };
+
+'use strict';
 
 var _cachedApplicationRef = Symbol('_cachedApplicationRef');
 var _mixinRef = Symbol('_mixinRef');
@@ -464,7 +541,7 @@ var Event = function () {
           cancelable = _ref$cancelable === undefined ? true : _ref$cancelable;
 
       var scope = internal$2(this);
-      scope.type = type || null;
+      scope.type = type !== undefined ? type : null;
       scope.captures = !!captures;
       scope.bubbles = !!bubbles;
       scope.cancelable = !!cancelable;
@@ -572,15 +649,15 @@ function modifyEvent(event) {
   var scope = internal$2(event);
   return {
     set target(value) {
-      scope.target = value || null;
+      scope.target = value !== undefined ? value : null;
     },
 
     set currentTarget(value) {
-      scope.currentTarget = value || null;
+      scope.currentTarget = value !== undefined ? value : null;
     },
 
     set eventPhase(value) {
-      scope.eventPhase = value || null;
+      scope.eventPhase = value !== undefined ? value : null;
     }
   };
 }
@@ -628,7 +705,7 @@ var CustomEvent = function (_Event) {
 
       get(CustomEvent.prototype.__proto__ || Object.getPrototypeOf(CustomEvent.prototype), 'init', this).call(this, _extends({ type: type }, rest));
       // Support target as a parameter
-      modifyEvent(this).target = target || null;
+      modifyEvent(this).target = target !== undefined ? target : null;
       return this;
     }
   }]);
@@ -670,8 +747,6 @@ var GenericEvent = function (_CustomEvent) {
   createClass(GenericEvent, [{
     key: 'init',
     value: function init() {
-      var _this2 = this;
-
       var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
       var type = _ref.type,
@@ -683,17 +758,15 @@ var GenericEvent = function (_CustomEvent) {
           rest = objectWithoutProperties(_ref, ['type', 'target', 'captures', 'bubbles']);
 
       get(GenericEvent.prototype.__proto__ || Object.getPrototypeOf(GenericEvent.prototype), 'init', this).call(this, { type: type, target: target, captures: captures, bubbles: bubbles });
-      Object.entries(rest).forEach(function (entry) {
-        var _entry = slicedToArray(entry, 2),
-            property = _entry[0],
-            value = _entry[1];
-
-        if (!{}.hasOwnProperty.call(_this2, property)) {
-          _this2[property] = value;
+      var names = Object.keys(rest);
+      for (var i = 0; i < names.length; ++i) {
+        var name = names[i];
+        if (!{}.hasOwnProperty.call(this, name)) {
+          this[name] = rest[name];
         } else {
-          throw new Error('Name "' + property + '" cannot be used for event property');
+          throw new Error('Name "' + name + '" cannot be used for event property');
         }
-      });
+      }
       return this;
     }
   }]);
@@ -828,7 +901,7 @@ var EventDispatcherMixin = Mixin(function (S) {
         var modifier = modifyEvent(event);
 
         // Set target to this when it's not set
-        if (!event.target) {
+        if (event.target === null) {
           modifier.target = this;
         }
         // Current target should be always this
@@ -841,19 +914,20 @@ var EventDispatcherMixin = Mixin(function (S) {
         }
         var eventPhase = event.eventPhase;
         if (!eventPhase || eventPhase === 'target' || eventPhase === 'capture') {
-          [].concat(toConsumableArray(listeners.capture)).some(function (listener) {
-            handleEvent(event, listener);
-            return event.immediatePropagationStopped;
-          });
-        }
-        if (event.immediatePropagationStopped) {
-          return;
+          for (var i = 0; i < listeners.capture.length; ++i) {
+            handleEvent(event, listeners.capture[i]);
+            if (event.immediatePropagationStopped) {
+              return;
+            }
+          }
         }
         if (!eventPhase || eventPhase === 'target' || eventPhase === 'bubble') {
-          [].concat(toConsumableArray(listeners.bubble)).some(function (listener) {
-            handleEvent(event, listener);
-            return event.immediatePropagationStopped;
-          });
+          for (var _i = 0; _i < listeners.bubble.length; ++_i) {
+            handleEvent(event, listeners.bubble[_i]);
+            if (event.immediatePropagationStopped) {
+              return;
+            }
+          }
         }
       }
     }]);
