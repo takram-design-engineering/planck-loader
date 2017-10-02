@@ -159,16 +159,16 @@ describe('DataLoader', () => {
     const failureSpy1 = sinon.spy()
     const completionSpy2 = sinon.spy()
     const failureSpy2 = sinon.spy()
-    loader1.addEventListener('completed', event => {
+    loader1.addEventListener('complete', event => {
       completionSpy1(event.target.completed)
     }, false)
-    loader1.addEventListener('failed', event => {
+    loader1.addEventListener('error', event => {
       failureSpy1(event.target.failed)
     }, false)
-    loader2.addEventListener('completed', event => {
+    loader2.addEventListener('complete', event => {
       completionSpy2(event.target.completed)
     }, false)
-    loader2.addEventListener('failed', event => {
+    loader2.addEventListener('error', event => {
       failureSpy2(event.target.failed)
     }, false)
     return Promise.all([
@@ -196,10 +196,10 @@ describe('DataLoader', () => {
     const loader = new DataLoader('data')
     const completionSpy = sinon.spy()
     const failureSpy = sinon.spy()
-    loader.addEventListener('completed', event => {
+    loader.addEventListener('complete', event => {
       completionSpy(event.target.failed)
     }, false)
-    loader.addEventListener('failed', event => {
+    loader.addEventListener('error', event => {
       failureSpy(event.target.failed)
     }, false)
     const promise = expect(loader.load()).rejected.then(() => {

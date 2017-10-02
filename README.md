@@ -97,22 +97,22 @@ Returns a `Promise` that resolves with an array of requests (`XMLHTTPRequest`). 
 <a id="loader-progress" href="#loader-progress">#</a>
 *loader*.**progress**
 
-`Number` that indicates the loading progress between 0-1 in total, dispatching an `progress ` event when the value changes.
+`Number` that indicates the loading progress between 0-1 in total, dispatching an `progress` event when the value changes.
 
 <a id="loader-determinate" href="#loader-determinate">#</a>
 *loader*.**determinate**
 
-`Boolean` Becomes when the loader becomes able to determine the progress, dispatching an `determinate ` event when the value changes.
+`Boolean` Becomes when the loader becomes able to determine the progress, dispatching an `determinate` event when the value changes.
 
 <a id="loader-completed" href="#loader-completed">#</a>
 *loader*.**completed**
 
-`Boolean` Becomes true when all of the requests completes loadind, dispatching an `completed ` event when the value changes.
+`Boolean` Becomes true when all of the requests completes loadind, dispatching a `complete` event when the value changes.
 
 <a id="loader-failed" href="#loader-failed">#</a>
 *loader*.**failed**
 
-`Boolean` Becomes true when any loader fails to load, dispatching an `failed ` event when the value changes.
+`Boolean` Becomes true when any loader fails to load, dispatching an `error` event when the value changes.
 
 ## License
 

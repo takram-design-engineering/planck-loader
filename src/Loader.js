@@ -63,7 +63,7 @@ function updateDeterminate(target) {
   })
   if (value !== scope.determinate) {
     scope.determinate = value
-    target.dispatchEvent({ type: 'determinate', target })
+    target.dispatchEvent({ type: 'determinate' })
   }
 }
 
@@ -74,7 +74,7 @@ function updateCompleted(target) {
   })
   if (value !== scope.completed) {
     scope.completed = value
-    target.dispatchEvent({ type: 'completed', target })
+    target.dispatchEvent({ type: 'complete' })
   }
 }
 
@@ -85,7 +85,7 @@ function updateFailed(target) {
   })
   if (value !== scope.failed) {
     scope.failed = value
-    target.dispatchEvent({ type: 'failed', target })
+    target.dispatchEvent({ type: 'error' })
 
     // Abort all the loaders
     if (scope.failed) {
@@ -95,11 +95,11 @@ function updateFailed(target) {
 }
 
 function handleSize(event) {
-  this.dispatchEvent({ type: 'size', target: this })
+  this.dispatchEvent({ type: 'size' })
 }
 
 function handleProgress(event) {
-  this.dispatchEvent({ type: 'progress', target: this })
+  this.dispatchEvent({ type: 'progress' })
 }
 
 function handleDeterminate(event) {
@@ -134,8 +134,8 @@ export default class Loader extends EventDispatcher {
       loader.addEventListener('size', scope.handlers.size, false)
       loader.addEventListener('progress', scope.handlers.progress, false)
       loader.addEventListener('determinate', scope.handlers.determinate, false)
-      loader.addEventListener('completed', scope.handlers.completed, false)
-      loader.addEventListener('failed', scope.handlers.failed, false)
+      loader.addEventListener('complete', scope.handlers.completed, false)
+      loader.addEventListener('error', scope.handlers.failed, false)
     })
   }
 
