@@ -40,9 +40,11 @@ export default class ScriptLoader extends DataLoader {
         script.type = 'text/javascript'
         script.src = this.url
         script.onload = () => {
+          this.dispatchEvent({ type: 'load' })
           resolve(request)
         }
         script.onerror = () => {
+          this.dispatchEvent({ type: 'error' })
           reject(request.status)
         }
         const scripts = document.getElementsByTagName('script')
