@@ -31,7 +31,7 @@ function setSize(target, value) {
   const scope = internal(target)
   if (value !== scope.size) {
     scope.size = value
-    target.dispatchEvent({ type: 'size', target })
+    target.dispatchEvent({ type: 'size' })
   }
 }
 
@@ -39,7 +39,7 @@ function setProgress(target, value) {
   const scope = internal(target)
   if (value !== scope.progress) {
     scope.progress = value
-    target.dispatchEvent({ type: 'progress', target })
+    target.dispatchEvent({ type: 'progress' })
   }
 }
 
@@ -47,7 +47,7 @@ function setDeterminate(target, value) {
   const scope = internal(target)
   if (value !== scope.determinate) {
     scope.determinate = value
-    target.dispatchEvent({ type: 'determinate', target })
+    target.dispatchEvent({ type: 'determinate' })
   }
 }
 
@@ -55,7 +55,7 @@ function setCompleted(target, value) {
   const scope = internal(target)
   if (value !== scope.completed) {
     scope.completed = value
-    target.dispatchEvent({ type: 'completed', target })
+    target.dispatchEvent({ type: 'complete' })
   }
 }
 
@@ -63,7 +63,7 @@ function setFailed(target, value) {
   const scope = internal(target)
   if (value !== scope.failed) {
     scope.failed = value
-    target.dispatchEvent({ type: 'failed', target })
+    target.dispatchEvent({ type: 'error' })
   }
 }
 
