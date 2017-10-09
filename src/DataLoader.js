@@ -67,51 +67,11 @@ function setFailed(target, value) {
   }
 }
 
-function handleInit(event) {
-  const scope = internal(this)
-  const request = event.target
-  request.removeEventListener('progress', scope.handlers.init, false)
-  if (request.status !== 200) {
-    return
-  }
-  if (scope.size === 0) {
-    setSize(this, event.total)
-  }
-  if (scope.size !== 0) {
-    setDeterminate(this, true)
-  }
-}
-
-function handleProgress(event) {
-  const scope = internal(this)
-  if (scope.determinate) {
-    setProgress(this, Math.min(1, event.loaded / scope.size))
-  }
-}
-
-function handleLoadend(event) {
-  const scope = internal(this)
-  const request = event.target
-  request.removeEventListener('progress', scope.handlers.progress, false)
-  request.removeEventListener('loadend', scope.handlers.loadend, false)
-  if (!scope.determinate) {
-    setDeterminate(this, true)
-  }
-  if (request.status === 200) {
-    setProgress(this, 1)
-    scope.resolve(request)
-    setCompleted(this, true)
-  } else {
-    // Rejecting before setting this as failed gives this status as the promise
-    // rejection reason when aggregated.
-    scope.reject(request.status)
-    setFailed(this, true)
-  }
-}
-
 export default class DataLoader extends EventDispatcher {
   constructor(target) {
     super()
+
+    // Intiial states
     const scope = internal(this)
     scope.request = null
     if (target !== undefined) {
@@ -125,6 +85,11 @@ export default class DataLoader extends EventDispatcher {
     scope.determinate = false
     scope.completed = false
     scope.failed = false
+
+    // Event handlers
+    this.onInitialProgress = this.onInitialProgress.bind(this)
+    this.onProgress = this.onProgress.bind(this)
+    this.onLoadend = this.onLoadend.bind(this)
   }
 
   get request() {
@@ -168,18 +133,13 @@ export default class DataLoader extends EventDispatcher {
       return scope.promise
     }
     if (this.url === null) {
-      return Promise.reject(new Error('Attempt to load without is not set'))
+      return Promise.reject(new Error('Attempt to load without url'))
     }
     scope.promise = new Promise((resolve, reject) => {
       const request = new XMLHttpRequest()
-      scope.handlers = {
-        init: handleInit.bind(this),
-        progress: handleProgress.bind(this),
-        loadend: handleLoadend.bind(this),
-      }
-      request.addEventListener('progress', scope.handlers.init, false)
-      request.addEventListener('progress', scope.handlers.progress, false)
-      request.addEventListener('loadend', scope.handlers.loadend, false)
+      request.addEventListener('progress', this.onInitialProgress, false)
+      request.addEventListener('progress', this.onProgress, false)
+      request.addEventListener('loadend', this.onLoadend, false)
       request.open('get', this.url)
       request.send()
       scope.request = request
@@ -195,5 +155,48 @@ export default class DataLoader extends EventDispatcher {
       return
     }
     scope.request.abort()
+  }
+
+  onInitialProgress(event) {
+    const scope = internal(this)
+    const request = event.target
+    request.removeEventListener('progress', this.onInitialProgress, false)
+    if (request.status < 200 || request.status >= 300) {
+      return
+    }
+    if (scope.size === 0) {
+      setSize(this, event.total)
+    }
+    if (scope.size !== 0) {
+      setDeterminate(this, true)
+    }
+  }
+
+  onProgress(event) {
+    const scope = internal(this)
+    if (scope.determinate) {
+      setProgress(this, Math.min(1, event.loaded / scope.size))
+    }
+  }
+
+  onLoadend(event) {
+    const scope = internal(this)
+    const request = event.target
+    request.removeEventListener('progress', this.onInitialProgress, false)
+    request.removeEventListener('progress', this.onProgress, false)
+    request.removeEventListener('loadend', this.onLoadend, false)
+    if (!scope.determinate) {
+      setDeterminate(this, true)
+    }
+    if (request.status >= 200 && request.status < 300) {
+      setProgress(this, 1)
+      scope.resolve(request)
+      setCompleted(this, true)
+    } else {
+      // Rejecting before setting this as failed gives this status as the
+      // promise rejection reason when aggregated.
+      scope.reject(request.status)
+      setFailed(this, true)
+    }
   }
 }

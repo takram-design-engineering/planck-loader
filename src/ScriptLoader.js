@@ -28,7 +28,40 @@ import DataLoader from './DataLoader'
 
 export const internal = Namespace('ScriptLoader')
 
+function setLoaded(target, value) {
+  const scope = internal(target)
+  if (value !== scope.loaded) {
+    scope.loaded = value
+    target.dispatchEvent({ type: 'load' })
+  }
+}
+
+function setError(target, value) {
+  const scope = internal(target)
+  if (value !== scope.error) {
+    scope.error = value
+    target.dispatchEvent({ type: 'error' })
+  }
+}
+
 export default class ScriptLoader extends DataLoader {
+  constructor(target) {
+    super(target)
+    const scope = internal(this)
+    scope.loaded = false
+    scope.error = null
+  }
+
+  get loaded() {
+    const scope = internal(this)
+    return scope.loaded
+  }
+
+  get error() {
+    const scope = internal(this)
+    return scope.error
+  }
+
   load() {
     const scope = internal(this)
     if (scope.promise !== undefined) {
@@ -40,12 +73,12 @@ export default class ScriptLoader extends DataLoader {
         script.type = 'text/javascript'
         script.src = this.url
         script.onload = () => {
-          this.dispatchEvent({ type: 'load' })
           resolve(request)
+          setLoaded(this, true)
         }
-        script.onerror = () => {
-          this.dispatchEvent({ type: 'error' })
-          reject(request.status)
+        script.onerror = error => {
+          reject(error)
+          setError(this, error)
         }
         const scripts = document.getElementsByTagName('script')
         const target = scripts[scripts.length - 1]
