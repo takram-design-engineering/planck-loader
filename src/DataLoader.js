@@ -51,22 +51,6 @@ function setDeterminate(target, value) {
   }
 }
 
-function setCompleted(target, value) {
-  const scope = internal(target)
-  if (value !== scope.completed) {
-    scope.completed = value
-    target.dispatchEvent({ type: 'complete' })
-  }
-}
-
-function setFailed(target, value) {
-  const scope = internal(target)
-  if (value !== scope.failed) {
-    scope.failed = value
-    target.dispatchEvent({ type: 'error' })
-  }
-}
-
 export default class DataLoader extends EventDispatcher {
   constructor(target) {
     super()
@@ -141,10 +125,13 @@ export default class DataLoader extends EventDispatcher {
       request.addEventListener('progress', this.onProgress, false)
       request.addEventListener('loadend', this.onLoadend, false)
       request.open('get', this.url)
-      request.send()
       scope.request = request
       scope.resolve = resolve
       scope.reject = reject
+
+      // TODO: Support promise return values
+      this.onBeforeLoading(request)
+      request.send()
     })
     return scope.promise
   }
@@ -190,13 +177,25 @@ export default class DataLoader extends EventDispatcher {
     }
     if (request.status >= 200 && request.status < 300) {
       setProgress(this, 1)
-      scope.resolve(request)
-      setCompleted(this, true)
+      Promise.resolve(this.onAfterLoading(request))
+        .then(() => {
+          scope.completed = true
+          scope.resolve(request)
+          this.dispatchEvent({ type: 'complete' })
+        })
+        .catch(error => {
+          scope.failed = true
+          scope.reject(error)
+          this.dispatchEvent({ type: 'error' })
+        })
     } else {
-      // Rejecting before setting this as failed gives this status as the
-      // promise rejection reason when aggregated.
+      scope.failed = true
       scope.reject(request.status)
-      setFailed(this, true)
+      this.dispatchEvent({ type: 'error' })
     }
   }
+
+  onBeforeLoading(request) {}
+
+  onAfterLoading(request) {}
 }

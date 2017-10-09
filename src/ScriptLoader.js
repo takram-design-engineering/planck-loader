@@ -22,69 +22,23 @@
 //  DEALINGS IN THE SOFTWARE.
 //
 
-import Namespace from '@takram/planck-core/src/Namespace'
-
 import DataLoader from './DataLoader'
 
-export const internal = Namespace('ScriptLoader')
-
-function setLoaded(target, value) {
-  const scope = internal(target)
-  if (value !== scope.loaded) {
-    scope.loaded = value
-    target.dispatchEvent({ type: 'load' })
-  }
-}
-
-function setError(target, value) {
-  const scope = internal(target)
-  if (value !== scope.error) {
-    scope.error = value
-    target.dispatchEvent({ type: 'error' })
-  }
-}
-
 export default class ScriptLoader extends DataLoader {
-  constructor(target) {
-    super(target)
-    const scope = internal(this)
-    scope.loaded = false
-    scope.error = null
-  }
-
-  get loaded() {
-    const scope = internal(this)
-    return scope.loaded
-  }
-
-  get error() {
-    const scope = internal(this)
-    return scope.error
-  }
-
-  load() {
-    const scope = internal(this)
-    if (scope.promise !== undefined) {
-      return scope.promise
-    }
-    scope.promise = new Promise((resolve, reject) => {
-      super.load().then(request => {
-        const script = document.createElement('script')
-        script.type = 'text/javascript'
-        script.src = this.url
-        script.onload = () => {
-          resolve(request)
-          setLoaded(this, true)
-        }
-        script.onerror = error => {
-          reject(error)
-          setError(this, error)
-        }
-        const scripts = document.getElementsByTagName('script')
-        const target = scripts[scripts.length - 1]
-        target.parentNode.insertBefore(script, target)
-      })
+  onAfterLoading(request) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.type = 'text/javascript'
+      script.src = this.url
+      script.onload = () => {
+        resolve()
+      }
+      script.onerror = error => {
+        reject(error)
+      }
+      const scripts = document.getElementsByTagName('script')
+      const target = scripts[scripts.length - 1]
+      target.parentNode.insertBefore(script, target)
     })
-    return scope.promise
   }
 }
