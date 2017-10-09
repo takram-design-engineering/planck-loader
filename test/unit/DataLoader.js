@@ -35,7 +35,10 @@ const expect = chai.expect
 chai.use(chaiAsPromised)
 chai.use(sinonChai)
 
-describe('DataLoader', () => {
+// eslint-disable-next-line func-names
+describe('DataLoader', function () {
+  this.timeout(30000)
+
   let server = null
 
   beforeEach(() => {
