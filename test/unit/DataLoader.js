@@ -31,7 +31,7 @@ import sinonChai from 'sinon-chai'
 
 import { DataLoader } from '../..'
 
-const expect = chai.expect
+const { expect } = chai
 chai.use(chaiAsPromised)
 chai.use(sinonChai)
 

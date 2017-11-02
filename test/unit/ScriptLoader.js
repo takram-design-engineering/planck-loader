@@ -28,7 +28,7 @@ import chai from 'chai'
 
 import { ScriptLoader } from '../..'
 
-const expect = chai.expect
+const { expect } = chai
 
 // eslint-disable-next-line func-names
 describe('ScriptLoader', function () {
@@ -39,9 +39,11 @@ describe('ScriptLoader', function () {
   })
 
   it('loads script', () => {
+    // eslint-disable-next-line no-restricted-globals
     self.planck_script_loader_test_flag = undefined
     const loader = new ScriptLoader('/test/unit/data/script')
     return expect(loader.load()).fulfilled.then(() => {
+      // eslint-disable-next-line no-restricted-globals
       expect(self.planck_script_loader_test_flag).not.undefined
     })
   })

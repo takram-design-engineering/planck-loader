@@ -31,7 +31,7 @@ import sinonChai from 'sinon-chai'
 
 import { Loader } from '../..'
 
-const expect = chai.expect
+const { expect } = chai
 chai.use(chaiAsPromised)
 chai.use(sinonChai)
 
@@ -234,7 +234,8 @@ describe('Loader', function () {
     const loader = new Loader(
       'data/1',
       'data/2',
-      'data/3')
+      'data/3',
+    )
     const spies = loader.loaders.map(loader => {
       const spy = sinon.spy()
       loader.addEventListener('complete', event => {
@@ -320,7 +321,8 @@ describe('Loader', function () {
       ['data/3', 'data/2'],
       'data/4',
       ['data/6', 'data/5'],
-      'data/7')
+      'data/7',
+    )
     const spies = loader.loaders.map(loader => {
       const spy = sinon.spy()
       loader.addEventListener('complete', event => {
