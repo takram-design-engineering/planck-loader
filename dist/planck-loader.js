@@ -480,6 +480,7 @@ switch (environmentType) {
     environmentSelf = window;
     break;
   case 'worker':
+    // eslint-disable-next-line no-restricted-globals
     environmentSelf = self;
     break;
   case 'node':
