@@ -14,118 +14,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 
 
-var asyncGenerator = function () {
-  function AwaitValue(value) {
-    this.value = value;
-  }
 
-  function AsyncGenerator(gen) {
-    var front, back;
-
-    function send(key, arg) {
-      return new Promise(function (resolve, reject) {
-        var request = {
-          key: key,
-          arg: arg,
-          resolve: resolve,
-          reject: reject,
-          next: null
-        };
-
-        if (back) {
-          back = back.next = request;
-        } else {
-          front = back = request;
-          resume(key, arg);
-        }
-      });
-    }
-
-    function resume(key, arg) {
-      try {
-        var result = gen[key](arg);
-        var value = result.value;
-
-        if (value instanceof AwaitValue) {
-          Promise.resolve(value.value).then(function (arg) {
-            resume("next", arg);
-          }, function (arg) {
-            resume("throw", arg);
-          });
-        } else {
-          settle(result.done ? "return" : "normal", result.value);
-        }
-      } catch (err) {
-        settle("throw", err);
-      }
-    }
-
-    function settle(type, value) {
-      switch (type) {
-        case "return":
-          front.resolve({
-            value: value,
-            done: true
-          });
-          break;
-
-        case "throw":
-          front.reject(value);
-          break;
-
-        default:
-          front.resolve({
-            value: value,
-            done: false
-          });
-          break;
-      }
-
-      front = front.next;
-
-      if (front) {
-        resume(front.key, front.arg);
-      } else {
-        back = null;
-      }
-    }
-
-    this._invoke = send;
-
-    if (typeof gen.return !== "function") {
-      this.return = undefined;
-    }
-  }
-
-  if (typeof Symbol === "function" && Symbol.asyncIterator) {
-    AsyncGenerator.prototype[Symbol.asyncIterator] = function () {
-      return this;
-    };
-  }
-
-  AsyncGenerator.prototype.next = function (arg) {
-    return this._invoke("next", arg);
-  };
-
-  AsyncGenerator.prototype.throw = function (arg) {
-    return this._invoke("throw", arg);
-  };
-
-  AsyncGenerator.prototype.return = function (arg) {
-    return this._invoke("return", arg);
-  };
-
-  return {
-    wrap: function (fn) {
-      return function () {
-        return new AsyncGenerator(fn.apply(this, arguments));
-      };
-    },
-    await: function (value) {
-      return new AwaitValue(value);
-    }
-  };
-}();
 
 
 
@@ -272,8 +161,6 @@ var toConsumableArray = function (arr) {
   }
 };
 
-'use strict';
-
 var _cachedApplicationRef = Symbol('_cachedApplicationRef');
 var _mixinRef = Symbol('_mixinRef');
 var _originalMixin = Symbol('_originalMixin');
@@ -411,7 +298,7 @@ var MixinBuilder = function () {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-function Namespace() {
+function createNamespace() {
   var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
 
   var symbol = Symbol(name);
@@ -519,7 +406,7 @@ var Environment = {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$2 = Namespace('Event');
+var internal$2 = createNamespace('Event');
 
 var Event = function () {
   function Event() {
@@ -798,7 +685,7 @@ var GenericEvent = function (_CustomEvent) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$1 = Namespace('EventDispatcherMixin');
+var internal$1 = createNamespace('EventDispatcherMixin');
 
 function handleEvent(event, listener) {
   if (typeof listener === 'function') {
@@ -1001,7 +888,7 @@ var EventDispatcher = function (_mix$with) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal = Namespace('DataLoader');
+var internal = createNamespace('DataLoader');
 
 function setSize(target, value) {
   var scope = internal(target);
@@ -1104,7 +991,12 @@ var DataLoader = function (_EventDispatcher) {
         return;
       }
       if (scope.size === 0) {
-        setSize(this, event.total);
+        if (event.lengthComputable) {
+          setSize(this, event.total);
+        } else {
+          var size = request.getResponseHeader('X-Decompressed-Content-Length');
+          setSize(this, +size || 0);
+        }
       }
       if (scope.size !== 0) {
         setDeterminate(this, true);
@@ -1280,7 +1172,7 @@ var ScriptLoader = function (_DataLoader) {
 //  DEALINGS IN THE SOFTWARE.
 //
 
-var internal$3 = Namespace('Loader');
+var internal$3 = createNamespace('Loader');
 
 function construct(entries) {
   return entries.map(function (entry) {
