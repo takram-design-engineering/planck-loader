@@ -152,7 +152,12 @@ export default class DataLoader extends EventDispatcher {
       return
     }
     if (scope.size === 0) {
-      setSize(this, event.total)
+      if (event.lengthComputable) {
+        setSize(this, event.total)
+      } else {
+        const size = request.getResponseHeader('X-Decompressed-Content-Length')
+        setSize(this, size || 0)
+      }
     }
     if (scope.size !== 0) {
       setDeterminate(this, true)
