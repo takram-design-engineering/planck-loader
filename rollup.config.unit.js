@@ -31,7 +31,6 @@ const pkg = require('./package.json')
 
 export default {
   input: './test/unit.js',
-  sourcemap: true,
   plugins: [
     nodeResolve({ browser: true }),
     commonjs(),
@@ -51,21 +50,22 @@ export default {
   intro: 'var BUNDLER = "rollup";',
   external: [
     'source-map-support/register',
-    path.resolve(pkg.browser),
     'chai',
     'mocha',
     'sinon',
+    path.resolve(pkg.browser),
   ],
   globals: {
-    [path.resolve(pkg.browser)]: 'Planck',
     'chai': 'chai',
     'mocha': 'mocha',
     'sinon': 'sinon',
+    [path.resolve(pkg.browser)]: 'Planck',
   },
   output: [
     {
       format: 'iife',
       file: './dist/test/unit/rollup.js',
+      sourcemap: true,
     },
   ],
 }
