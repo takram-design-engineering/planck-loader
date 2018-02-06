@@ -26,7 +26,6 @@ export default {
       babelrc: false,
     }),
   ],
-  intro: 'var BUNDLER = "rollup";',
   external: [
     'source-map-support/register',
     'chai',
@@ -34,17 +33,16 @@ export default {
     'sinon',
     path.resolve(pkg.browser),
   ],
-  globals: {
-    'chai': 'chai',
-    'mocha': 'mocha',
-    'sinon': 'sinon',
-    [path.resolve(pkg.browser)]: 'Planck',
-  },
-  output: [
-    {
-      format: 'iife',
-      file: './dist/test/unit/rollup.js',
-      sourcemap: true,
+  output: {
+    intro: 'var BUNDLER = "rollup";',
+    globals: {
+      'chai': 'chai',
+      'mocha': 'mocha',
+      'sinon': 'sinon',
+      [path.resolve(pkg.browser)]: 'Planck',
     },
-  ],
+    format: 'iife',
+    file: './dist/test/unit/rollup.js',
+    sourcemap: true,
+  },
 }

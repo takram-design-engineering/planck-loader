@@ -23,13 +23,11 @@ export default {
       babelrc: false,
     }),
   ],
-  output: [
-    {
-      format: 'umd',
-      extend: true,
-      name: 'Planck',
-      file: './dist/planck-loader.js',
-      sourcemap: true,
-    },
-  ],
+  output: {
+    format: 'umd',
+    extend: true,
+    name: 'Planck',
+    file: './dist/planck-loader.js',
+    sourcemap: true,
+  },
 }
