@@ -1,26 +1,5 @@
-//
-//  The MIT License
-//
-//  Copyright (C) 2017-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2017-Present Shota Matsuda
 
 import EventDispatcher from '@takram/planck-event/src/EventDispatcher'
 import Namespace from '@takram/planck-core/src/Namespace'
@@ -56,86 +35,31 @@ function expand(entries) {
   }, [])
 }
 
-function updateDeterminate(target) {
-  const scope = internal(target)
-  const value = scope.loaders.every(loader => {
-    return loader.determinate
-  })
-  if (value !== scope.determinate) {
-    scope.determinate = value
-    target.dispatchEvent({ type: 'determinate' })
-  }
-}
-
-function updateCompleted(target) {
-  const scope = internal(target)
-  const value = scope.loaders.every(loader => {
-    return loader.completed
-  })
-  if (value !== scope.completed) {
-    scope.completed = value
-    target.dispatchEvent({ type: 'complete' })
-  }
-}
-
-function updateFailed(target) {
-  const scope = internal(target)
-  const value = scope.loaders.some(loader => {
-    return loader.failed
-  })
-  if (value !== scope.failed) {
-    scope.failed = value
-    target.dispatchEvent({ type: 'error' })
-
-    // Abort all the loaders
-    if (scope.failed) {
-      target.abort()
-    }
-  }
-}
-
-function handleSize(event) {
-  this.dispatchEvent({ type: 'size' })
-}
-
-function handleProgress(event) {
-  this.dispatchEvent({ type: 'progress' })
-}
-
-function handleDeterminate(event) {
-  updateDeterminate(this)
-}
-
-function handleCompleted(event) {
-  updateCompleted(this)
-}
-
-function handleFailed(event) {
-  updateFailed(this)
-}
-
 export default class Loader extends EventDispatcher {
   constructor(...sequence) {
     super()
+
+    // Initial states
     const scope = internal(this)
     scope.determinate = false
     scope.completed = false
     scope.failed = false
-    scope.handlers = {
-      size: handleSize.bind(this),
-      progress: handleProgress.bind(this),
-      determinate: handleDeterminate.bind(this),
-      completed: handleCompleted.bind(this),
-      failed: handleFailed.bind(this),
-    }
+
+    // Event handlers
+    this.onSize = this.onSize.bind(this)
+    this.onProgress = this.onProgress.bind(this)
+    this.onDeterminate = this.onDeterminate.bind(this)
+    this.onComplete = this.onComplete.bind(this)
+    this.onError = this.onError.bind(this)
+
     scope.sequence = construct(sequence)
     scope.loaders = expand(scope.sequence)
     scope.loaders.forEach(loader => {
-      loader.addEventListener('size', scope.handlers.size, false)
-      loader.addEventListener('progress', scope.handlers.progress, false)
-      loader.addEventListener('determinate', scope.handlers.determinate, false)
-      loader.addEventListener('complete', scope.handlers.completed, false)
-      loader.addEventListener('error', scope.handlers.failed, false)
+      loader.addEventListener('size', this.onSize, false)
+      loader.addEventListener('progress', this.onProgress, false)
+      loader.addEventListener('determinate', this.onDeterminate, false)
+      loader.addEventListener('complete', this.onComplete, false)
+      loader.addEventListener('error', this.onError, false)
     })
   }
 
@@ -249,5 +173,53 @@ export default class Loader extends EventDispatcher {
         })
       })
     }, null)
+  }
+
+  onSize(event) {
+    event.target.removeEventListener('size', this.onSize, false)
+    this.dispatchEvent({ type: 'size' })
+  }
+
+  onProgress(event) {
+    this.dispatchEvent({ type: 'progress' })
+  }
+
+  onDeterminate(event) {
+    event.target.removeEventListener('determinate', this.onDeterminate, false)
+    const scope = internal(this)
+    const value = scope.loaders.every(loader => {
+      return loader.determinate
+    })
+    if (value !== scope.determinate) {
+      scope.determinate = value
+      this.dispatchEvent({ type: 'determinate' })
+    }
+  }
+
+  onComplete(event) {
+    const scope = internal(this)
+    const value = scope.loaders.every(loader => {
+      return loader.completed
+    })
+    if (value !== scope.completed) {
+      scope.completed = value
+      this.dispatchEvent({ type: 'complete' })
+    }
+  }
+
+  onError(event) {
+    const scope = internal(this)
+    const value = scope.loaders.some(loader => {
+      return loader.failed
+    })
+    if (value !== scope.failed) {
+      scope.failed = value
+      this.dispatchEvent({ type: 'error' })
+
+      // Abort all the loaders
+      if (scope.failed) {
+        this.abort()
+      }
+    }
   }
 }

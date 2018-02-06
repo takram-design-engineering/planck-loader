@@ -14,118 +14,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 
 
-var asyncGenerator = function () {
-  function AwaitValue(value) {
-    this.value = value;
-  }
 
-  function AsyncGenerator(gen) {
-    var front, back;
-
-    function send(key, arg) {
-      return new Promise(function (resolve, reject) {
-        var request = {
-          key: key,
-          arg: arg,
-          resolve: resolve,
-          reject: reject,
-          next: null
-        };
-
-        if (back) {
-          back = back.next = request;
-        } else {
-          front = back = request;
-          resume(key, arg);
-        }
-      });
-    }
-
-    function resume(key, arg) {
-      try {
-        var result = gen[key](arg);
-        var value = result.value;
-
-        if (value instanceof AwaitValue) {
-          Promise.resolve(value.value).then(function (arg) {
-            resume("next", arg);
-          }, function (arg) {
-            resume("throw", arg);
-          });
-        } else {
-          settle(result.done ? "return" : "normal", result.value);
-        }
-      } catch (err) {
-        settle("throw", err);
-      }
-    }
-
-    function settle(type, value) {
-      switch (type) {
-        case "return":
-          front.resolve({
-            value: value,
-            done: true
-          });
-          break;
-
-        case "throw":
-          front.reject(value);
-          break;
-
-        default:
-          front.resolve({
-            value: value,
-            done: false
-          });
-          break;
-      }
-
-      front = front.next;
-
-      if (front) {
-        resume(front.key, front.arg);
-      } else {
-        back = null;
-      }
-    }
-
-    this._invoke = send;
-
-    if (typeof gen.return !== "function") {
-      this.return = undefined;
-    }
-  }
-
-  if (typeof Symbol === "function" && Symbol.asyncIterator) {
-    AsyncGenerator.prototype[Symbol.asyncIterator] = function () {
-      return this;
-    };
-  }
-
-  AsyncGenerator.prototype.next = function (arg) {
-    return this._invoke("next", arg);
-  };
-
-  AsyncGenerator.prototype.throw = function (arg) {
-    return this._invoke("throw", arg);
-  };
-
-  AsyncGenerator.prototype.return = function (arg) {
-    return this._invoke("return", arg);
-  };
-
-  return {
-    wrap: function (fn) {
-      return function () {
-        return new AsyncGenerator(fn.apply(this, arguments));
-      };
-    },
-    await: function (value) {
-      return new AwaitValue(value);
-    }
-  };
-}();
 
 
 
@@ -272,8 +161,6 @@ var toConsumableArray = function (arr) {
   }
 };
 
-'use strict';
-
 var _cachedApplicationRef = Symbol('_cachedApplicationRef');
 var _mixinRef = Symbol('_mixinRef');
 var _originalMixin = Symbol('_originalMixin');
@@ -387,31 +274,10 @@ var MixinBuilder = function () {
   return MixinBuilder;
 }();
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
-function Namespace() {
+function createNamespace() {
   var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
 
   var symbol = Symbol(name);
@@ -428,97 +294,64 @@ function Namespace() {
   };
 }
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
-var environmentType = function () {
+var isBrowser = function () {
   try {
     // eslint-disable-next-line no-new-func
     if (new Function('return this === window')()) {
-      return 'browser';
+      return true;
     }
   } catch (error) {}
+  return false;
+}();
+
+var isWorker = !isBrowser && function () {
   try {
     // eslint-disable-next-line no-new-func
     if (new Function('return this === self')()) {
-      return 'worker';
+      return true;
     }
   } catch (error) {}
+  return false;
+}();
+
+var isNode = !isBrowser && !isWorker && function () {
   try {
     // eslint-disable-next-line no-new-func
     if (new Function('return this === global')()) {
-      return 'node';
+      return true;
     }
   } catch (error) {}
+  return false;
+}();
+
+var globalScope = function () {
+  if (isBrowser) {
+    return window;
+  }
+  if (isWorker) {
+    // eslint-disable-next-line no-restricted-globals
+    return self;
+  }
+  if (isNode) {
+    return global;
+  }
   return undefined;
 }();
 
-var environmentSelf = void 0;
-switch (environmentType) {
-  case 'browser':
-    environmentSelf = window;
-    break;
-  case 'worker':
-    environmentSelf = self;
-    break;
-  case 'node':
-    environmentSelf = global;
-    break;
-  default:
-    break;
-}
-
-var Environment = {
-  type: environmentType,
-  self: environmentSelf
+var Global = {
+  isBrowser: isBrowser,
+  isWorker: isWorker,
+  isNode: isNode,
+  scope: globalScope
 };
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
-var internal$2 = Namespace('Event');
+var internal = createNamespace('Event');
 
 var Event = function () {
   function Event() {
@@ -540,12 +373,12 @@ var Event = function () {
           _ref$cancelable = _ref.cancelable,
           cancelable = _ref$cancelable === undefined ? true : _ref$cancelable;
 
-      var scope = internal$2(this);
+      var scope = internal(this);
       scope.type = type !== undefined ? type : null;
       scope.captures = !!captures;
       scope.bubbles = !!bubbles;
       scope.cancelable = !!cancelable;
-      scope.timeStamp = Environment.self.performance && Environment.self.performance.now && Environment.self.performance.now() || Date.now();
+      scope.timeStamp = Global.scope.performance && Global.scope.performance.now && Global.scope.performance.now() || Date.now();
       scope.propagationStopped = false;
       scope.immediatePropagationStopped = false;
       scope.defaultPrevented = false;
@@ -557,13 +390,13 @@ var Event = function () {
   }, {
     key: 'stopPropagation',
     value: function stopPropagation() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       scope.propagationStopped = true;
     }
   }, {
     key: 'stopImmediatePropagation',
     value: function stopImmediatePropagation() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       scope.propagationStopped = true;
       scope.immediatePropagationStopped = true;
     }
@@ -571,74 +404,74 @@ var Event = function () {
     key: 'preventDefault',
     value: function preventDefault() {
       if (this.cancelable) {
-        var scope = internal$2(this);
+        var scope = internal(this);
         scope.defaultPrevented = true;
       }
     }
   }, {
     key: 'type',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.type;
     }
   }, {
     key: 'target',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.target;
     }
   }, {
     key: 'currentTarget',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.currentTarget;
     }
   }, {
     key: 'eventPhase',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.eventPhase;
     }
   }, {
     key: 'captures',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.captures;
     }
   }, {
     key: 'bubbles',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.bubbles;
     }
   }, {
     key: 'cancelable',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.cancelable;
     }
   }, {
     key: 'timeStamp',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.timeStamp;
     }
   }, {
     key: 'propagationStopped',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.propagationStopped;
     }
   }, {
     key: 'immediatePropagationStopped',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.immediatePropagationStopped;
     }
   }, {
     key: 'defaultPrevented',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.defaultPrevented;
     }
   }]);
@@ -646,7 +479,7 @@ var Event = function () {
 }();
 
 function modifyEvent(event) {
-  var scope = internal$2(event);
+  var scope = internal(event);
   return {
     set target(value) {
       scope.target = value !== undefined ? value : null;
@@ -662,29 +495,8 @@ function modifyEvent(event) {
   };
 }
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
 var CustomEvent = function (_Event) {
   inherits(CustomEvent, _Event);
@@ -712,29 +524,8 @@ var CustomEvent = function (_Event) {
   return CustomEvent;
 }(Event);
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
 var GenericEvent = function (_CustomEvent) {
   inherits(GenericEvent, _CustomEvent);
@@ -757,7 +548,9 @@ var GenericEvent = function (_CustomEvent) {
           bubbles = _ref$bubbles === undefined ? false : _ref$bubbles,
           rest = objectWithoutProperties(_ref, ['type', 'target', 'captures', 'bubbles']);
 
-      get(GenericEvent.prototype.__proto__ || Object.getPrototypeOf(GenericEvent.prototype), 'init', this).call(this, { type: type, target: target, captures: captures, bubbles: bubbles });
+      get(GenericEvent.prototype.__proto__ || Object.getPrototypeOf(GenericEvent.prototype), 'init', this).call(this, {
+        type: type, target: target, captures: captures, bubbles: bubbles
+      });
       var names = Object.keys(rest);
       for (var i = 0; i < names.length; ++i) {
         var name = names[i];
@@ -773,31 +566,10 @@ var GenericEvent = function (_CustomEvent) {
   return GenericEvent;
 }(CustomEvent);
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
-var internal$1 = Namespace('EventDispatcherMixin');
+var internal$1 = createNamespace('EventDispatcherMixin');
 
 function handleEvent(event, listener) {
   if (typeof listener === 'function') {
@@ -912,18 +684,22 @@ var EventDispatcherMixin = Mixin(function (S) {
         if (listeners === undefined) {
           return;
         }
-        var eventPhase = event.eventPhase;
+        var _event = event,
+            eventPhase = _event.eventPhase;
+
         if (!eventPhase || eventPhase === 'target' || eventPhase === 'capture') {
-          for (var i = 0; i < listeners.capture.length; ++i) {
-            handleEvent(event, listeners.capture[i]);
+          var capture = [].concat(toConsumableArray(listeners.capture));
+          for (var i = 0; i < capture.length; ++i) {
+            handleEvent(event, capture[i]);
             if (event.immediatePropagationStopped) {
               return;
             }
           }
         }
         if (!eventPhase || eventPhase === 'target' || eventPhase === 'bubble') {
-          for (var _i = 0; _i < listeners.bubble.length; ++_i) {
-            handleEvent(event, listeners.bubble[_i]);
+          var bubble = [].concat(toConsumableArray(listeners.bubble));
+          for (var _i = 0; _i < bubble.length; ++_i) {
+            handleEvent(event, bubble[_i]);
             if (event.immediatePropagationStopped) {
               return;
             }
@@ -935,29 +711,8 @@ var EventDispatcherMixin = Mixin(function (S) {
   }(S);
 });
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
 var EventDispatcher = function (_mix$with) {
   inherits(EventDispatcher, _mix$with);
@@ -976,34 +731,13 @@ var EventDispatcher = function (_mix$with) {
   return _class;
 }()).with(EventDispatcherMixin));
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2017-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2017-Present Shota Matsuda
 
-var internal = Namespace('DataLoader');
+var internal$2 = createNamespace('DataLoader');
 
 function setSize(target, value) {
-  var scope = internal(target);
+  var scope = internal$2(target);
   if (value !== scope.size) {
     scope.size = value;
     target.dispatchEvent({ type: 'size' });
@@ -1011,7 +745,7 @@ function setSize(target, value) {
 }
 
 function setProgress(target, value) {
-  var scope = internal(target);
+  var scope = internal$2(target);
   if (value !== scope.progress) {
     scope.progress = value;
     target.dispatchEvent({ type: 'progress' });
@@ -1019,68 +753,10 @@ function setProgress(target, value) {
 }
 
 function setDeterminate(target, value) {
-  var scope = internal(target);
+  var scope = internal$2(target);
   if (value !== scope.determinate) {
     scope.determinate = value;
     target.dispatchEvent({ type: 'determinate' });
-  }
-}
-
-function setCompleted(target, value) {
-  var scope = internal(target);
-  if (value !== scope.completed) {
-    scope.completed = value;
-    target.dispatchEvent({ type: 'complete' });
-  }
-}
-
-function setFailed(target, value) {
-  var scope = internal(target);
-  if (value !== scope.failed) {
-    scope.failed = value;
-    target.dispatchEvent({ type: 'error' });
-  }
-}
-
-function handleInit(event) {
-  var scope = internal(this);
-  var request = event.target;
-  request.removeEventListener('progress', scope.handlers.init, false);
-  if (request.status !== 200) {
-    return;
-  }
-  if (scope.size === 0) {
-    setSize(this, event.total);
-  }
-  if (scope.size !== 0) {
-    setDeterminate(this, true);
-  }
-}
-
-function handleProgress(event) {
-  var scope = internal(this);
-  if (scope.determinate) {
-    setProgress(this, Math.min(1, event.loaded / scope.size));
-  }
-}
-
-function handleLoadend(event) {
-  var scope = internal(this);
-  var request = event.target;
-  request.removeEventListener('progress', scope.handlers.progress, false);
-  request.removeEventListener('loadend', scope.handlers.loadend, false);
-  if (!scope.determinate) {
-    setDeterminate(this, true);
-  }
-  if (request.status === 200) {
-    setProgress(this, 1);
-    scope.resolve(request);
-    setCompleted(this, true);
-  } else {
-    // Rejecting before setting this as failed gives this status as the promise
-    // rejection reason when aggregated.
-    scope.reject(request.status);
-    setFailed(this, true);
   }
 }
 
@@ -1090,9 +766,10 @@ var DataLoader = function (_EventDispatcher) {
   function DataLoader(target) {
     classCallCheck(this, DataLoader);
 
+    // Intiial states
     var _this = possibleConstructorReturn(this, (DataLoader.__proto__ || Object.getPrototypeOf(DataLoader)).call(this));
 
-    var scope = internal(_this);
+    var scope = internal$2(_this);
     scope.request = null;
     if (target !== undefined) {
       scope.url = target.url || target;
@@ -1105,6 +782,11 @@ var DataLoader = function (_EventDispatcher) {
     scope.determinate = false;
     scope.completed = false;
     scope.failed = false;
+
+    // Event handlers
+    _this.onInitialProgress = _this.onInitialProgress.bind(_this);
+    _this.onProgress = _this.onProgress.bind(_this);
+    _this.onLoadend = _this.onLoadend.bind(_this);
     return _this;
   }
 
@@ -1113,111 +795,151 @@ var DataLoader = function (_EventDispatcher) {
     value: function load() {
       var _this2 = this;
 
-      var scope = internal(this);
+      var scope = internal$2(this);
       if (scope.promise !== undefined) {
         return scope.promise;
       }
       if (this.url === null) {
-        return Promise.reject(new Error('Attempt to load without is not set'));
+        return Promise.reject(new Error('Attempt to load without url'));
       }
       scope.promise = new Promise(function (resolve, reject) {
         var request = new XMLHttpRequest();
-        scope.handlers = {
-          init: handleInit.bind(_this2),
-          progress: handleProgress.bind(_this2),
-          loadend: handleLoadend.bind(_this2)
-        };
-        request.addEventListener('progress', scope.handlers.init, false);
-        request.addEventListener('progress', scope.handlers.progress, false);
-        request.addEventListener('loadend', scope.handlers.loadend, false);
+        request.addEventListener('progress', _this2.onInitialProgress, false);
+        request.addEventListener('progress', _this2.onProgress, false);
+        request.addEventListener('loadend', _this2.onLoadend, false);
         request.open('get', _this2.url);
-        request.send();
         scope.request = request;
         scope.resolve = resolve;
         scope.reject = reject;
+
+        // TODO: Support promise return values
+        _this2.onBeforeLoading(request);
+        request.send();
       });
       return scope.promise;
     }
   }, {
     key: 'abort',
     value: function abort() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       if (scope.promise === undefined) {
         return;
       }
       scope.request.abort();
     }
   }, {
+    key: 'onInitialProgress',
+    value: function onInitialProgress(event) {
+      var scope = internal$2(this);
+      var request = event.target;
+      request.removeEventListener('progress', this.onInitialProgress, false);
+      if (request.status < 200 || request.status >= 300) {
+        return;
+      }
+      if (scope.size === 0) {
+        if (event.lengthComputable) {
+          setSize(this, event.total);
+        } else {
+          var size = request.getResponseHeader('X-Decompressed-Content-Length');
+          setSize(this, +size || 0);
+        }
+      }
+      if (scope.size !== 0) {
+        setDeterminate(this, true);
+      }
+    }
+  }, {
+    key: 'onProgress',
+    value: function onProgress(event) {
+      var scope = internal$2(this);
+      if (scope.determinate) {
+        setProgress(this, Math.min(1, event.loaded / scope.size));
+      }
+    }
+  }, {
+    key: 'onLoadend',
+    value: function onLoadend(event) {
+      var _this3 = this;
+
+      var scope = internal$2(this);
+      var request = event.target;
+      request.removeEventListener('progress', this.onInitialProgress, false);
+      request.removeEventListener('progress', this.onProgress, false);
+      request.removeEventListener('loadend', this.onLoadend, false);
+      if (!scope.determinate) {
+        setDeterminate(this, true);
+      }
+      if (request.status >= 200 && request.status < 300) {
+        setProgress(this, 1);
+        Promise.resolve(this.onAfterLoading(request)).then(function () {
+          scope.completed = true;
+          scope.resolve(request);
+          _this3.dispatchEvent({ type: 'complete' });
+        }).catch(function (error) {
+          scope.failed = true;
+          scope.reject(error);
+          _this3.dispatchEvent({ type: 'error' });
+        });
+      } else {
+        scope.failed = true;
+        scope.reject(request.status);
+        this.dispatchEvent({ type: 'error' });
+      }
+    }
+  }, {
+    key: 'onBeforeLoading',
+    value: function onBeforeLoading(request) {}
+  }, {
+    key: 'onAfterLoading',
+    value: function onAfterLoading(request) {}
+  }, {
     key: 'request',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.request;
     }
   }, {
     key: 'url',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.url;
     }
   }, {
     key: 'size',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.size;
     }
   }, {
     key: 'progress',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.progress;
     }
   }, {
     key: 'determinate',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.determinate;
     }
   }, {
     key: 'completed',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.completed;
     }
   }, {
     key: 'failed',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.failed;
     }
   }]);
   return DataLoader;
 }(EventDispatcher);
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2017-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
-
-var internal$4 = Namespace('ScriptLoader');
+// The MIT License
+// Copyright (C) 2017-Present Shota Matsuda
 
 var ScriptLoader = function (_DataLoader) {
   inherits(ScriptLoader, _DataLoader);
@@ -1228,63 +950,33 @@ var ScriptLoader = function (_DataLoader) {
   }
 
   createClass(ScriptLoader, [{
-    key: 'load',
-    value: function load() {
+    key: 'onAfterLoading',
+    value: function onAfterLoading(request) {
       var _this2 = this;
 
-      var scope = internal$4(this);
-      if (scope.promise !== undefined) {
-        return scope.promise;
-      }
-      scope.promise = new Promise(function (resolve, reject) {
-        get(ScriptLoader.prototype.__proto__ || Object.getPrototypeOf(ScriptLoader.prototype), 'load', _this2).call(_this2).then(function (request) {
-          var script = document.createElement('script');
-          script.type = 'text/javascript';
-          script.src = _this2.url;
-          script.onload = function () {
-            _this2.dispatchEvent({ type: 'load' });
-            resolve(request);
-          };
-          script.onerror = function () {
-            _this2.dispatchEvent({ type: 'error' });
-            reject(request.status);
-          };
-          var scripts = document.getElementsByTagName('script');
-          var target = scripts[scripts.length - 1];
-          target.parentNode.insertBefore(script, target);
-        });
+      return new Promise(function (resolve, reject) {
+        var script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = _this2.url;
+        script.onload = function () {
+          resolve();
+        };
+        script.onerror = function (error) {
+          reject(error);
+        };
+        var scripts = document.getElementsByTagName('script');
+        var target = scripts[scripts.length - 1];
+        target.parentNode.insertBefore(script, target);
       });
-      return scope.promise;
     }
   }]);
   return ScriptLoader;
 }(DataLoader);
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2017-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2017-Present Shota Matsuda
 
-var internal$3 = Namespace('Loader');
+var internal$3 = createNamespace('Loader');
 
 function construct(entries) {
   return entries.map(function (entry) {
@@ -1312,83 +1004,26 @@ function expand(entries) {
   }, []);
 }
 
-function updateDeterminate(target) {
-  var scope = internal$3(target);
-  var value = scope.loaders.every(function (loader) {
-    return loader.determinate;
-  });
-  if (value !== scope.determinate) {
-    scope.determinate = value;
-    target.dispatchEvent({ type: 'determinate' });
-  }
-}
-
-function updateCompleted(target) {
-  var scope = internal$3(target);
-  var value = scope.loaders.every(function (loader) {
-    return loader.completed;
-  });
-  if (value !== scope.completed) {
-    scope.completed = value;
-    target.dispatchEvent({ type: 'complete' });
-  }
-}
-
-function updateFailed(target) {
-  var scope = internal$3(target);
-  var value = scope.loaders.some(function (loader) {
-    return loader.failed;
-  });
-  if (value !== scope.failed) {
-    scope.failed = value;
-    target.dispatchEvent({ type: 'error' });
-
-    // Abort all the loaders
-    if (scope.failed) {
-      target.abort();
-    }
-  }
-}
-
-function handleSize(event) {
-  this.dispatchEvent({ type: 'size' });
-}
-
-function handleProgress$1(event) {
-  this.dispatchEvent({ type: 'progress' });
-}
-
-function handleDeterminate(event) {
-  updateDeterminate(this);
-}
-
-function handleCompleted(event) {
-  updateCompleted(this);
-}
-
-function handleFailed(event) {
-  updateFailed(this);
-}
-
 var Loader = function (_EventDispatcher) {
   inherits(Loader, _EventDispatcher);
 
   function Loader() {
     classCallCheck(this, Loader);
 
+    // Initial states
     var _this = possibleConstructorReturn(this, (Loader.__proto__ || Object.getPrototypeOf(Loader)).call(this));
 
     var scope = internal$3(_this);
     scope.determinate = false;
     scope.completed = false;
     scope.failed = false;
-    scope.handlers = {
-      size: handleSize.bind(_this),
-      progress: handleProgress$1.bind(_this),
-      determinate: handleDeterminate.bind(_this),
-      completed: handleCompleted.bind(_this),
-      failed: handleFailed.bind(_this)
-    };
+
+    // Event handlers
+    _this.onSize = _this.onSize.bind(_this);
+    _this.onProgress = _this.onProgress.bind(_this);
+    _this.onDeterminate = _this.onDeterminate.bind(_this);
+    _this.onComplete = _this.onComplete.bind(_this);
+    _this.onError = _this.onError.bind(_this);
 
     for (var _len = arguments.length, sequence = Array(_len), _key = 0; _key < _len; _key++) {
       sequence[_key] = arguments[_key];
@@ -1397,11 +1032,11 @@ var Loader = function (_EventDispatcher) {
     scope.sequence = construct(sequence);
     scope.loaders = expand(scope.sequence);
     scope.loaders.forEach(function (loader) {
-      loader.addEventListener('size', scope.handlers.size, false);
-      loader.addEventListener('progress', scope.handlers.progress, false);
-      loader.addEventListener('determinate', scope.handlers.determinate, false);
-      loader.addEventListener('complete', scope.handlers.completed, false);
-      loader.addEventListener('error', scope.handlers.failed, false);
+      loader.addEventListener('size', _this.onSize, false);
+      loader.addEventListener('progress', _this.onProgress, false);
+      loader.addEventListener('determinate', _this.onDeterminate, false);
+      loader.addEventListener('complete', _this.onComplete, false);
+      loader.addEventListener('error', _this.onError, false);
     });
     return _this;
   }
@@ -1429,6 +1064,59 @@ var Loader = function (_EventDispatcher) {
       scope.loaders.forEach(function (loader) {
         loader.abort();
       });
+    }
+  }, {
+    key: 'onSize',
+    value: function onSize(event) {
+      event.target.removeEventListener('size', this.onSize, false);
+      this.dispatchEvent({ type: 'size' });
+    }
+  }, {
+    key: 'onProgress',
+    value: function onProgress(event) {
+      this.dispatchEvent({ type: 'progress' });
+    }
+  }, {
+    key: 'onDeterminate',
+    value: function onDeterminate(event) {
+      event.target.removeEventListener('determinate', this.onDeterminate, false);
+      var scope = internal$3(this);
+      var value = scope.loaders.every(function (loader) {
+        return loader.determinate;
+      });
+      if (value !== scope.determinate) {
+        scope.determinate = value;
+        this.dispatchEvent({ type: 'determinate' });
+      }
+    }
+  }, {
+    key: 'onComplete',
+    value: function onComplete(event) {
+      var scope = internal$3(this);
+      var value = scope.loaders.every(function (loader) {
+        return loader.completed;
+      });
+      if (value !== scope.completed) {
+        scope.completed = value;
+        this.dispatchEvent({ type: 'complete' });
+      }
+    }
+  }, {
+    key: 'onError',
+    value: function onError(event) {
+      var scope = internal$3(this);
+      var value = scope.loaders.some(function (loader) {
+        return loader.failed;
+      });
+      if (value !== scope.failed) {
+        scope.failed = value;
+        this.dispatchEvent({ type: 'error' });
+
+        // Abort all the loaders
+        if (scope.failed) {
+          this.abort();
+        }
+      }
     }
   }, {
     key: 'loaders',
@@ -1540,29 +1228,8 @@ var Loader = function (_EventDispatcher) {
   return Loader;
 }(EventDispatcher);
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2017-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2017-Present Shota Matsuda
 
 exports.DataLoader = DataLoader;
 exports.Loader = Loader;

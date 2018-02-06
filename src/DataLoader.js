@@ -1,26 +1,5 @@
-//
-//  The MIT License
-//
-//  Copyright (C) 2017-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2017-Present Shota Matsuda
 
 import EventDispatcher from '@takram/planck-event/src/EventDispatcher'
 import Namespace from '@takram/planck-core/src/Namespace'
@@ -51,67 +30,11 @@ function setDeterminate(target, value) {
   }
 }
 
-function setCompleted(target, value) {
-  const scope = internal(target)
-  if (value !== scope.completed) {
-    scope.completed = value
-    target.dispatchEvent({ type: 'complete' })
-  }
-}
-
-function setFailed(target, value) {
-  const scope = internal(target)
-  if (value !== scope.failed) {
-    scope.failed = value
-    target.dispatchEvent({ type: 'error' })
-  }
-}
-
-function handleInit(event) {
-  const scope = internal(this)
-  const request = event.target
-  request.removeEventListener('progress', scope.handlers.init, false)
-  if (request.status !== 200) {
-    return
-  }
-  if (scope.size === 0) {
-    setSize(this, event.total)
-  }
-  if (scope.size !== 0) {
-    setDeterminate(this, true)
-  }
-}
-
-function handleProgress(event) {
-  const scope = internal(this)
-  if (scope.determinate) {
-    setProgress(this, Math.min(1, event.loaded / scope.size))
-  }
-}
-
-function handleLoadend(event) {
-  const scope = internal(this)
-  const request = event.target
-  request.removeEventListener('progress', scope.handlers.progress, false)
-  request.removeEventListener('loadend', scope.handlers.loadend, false)
-  if (!scope.determinate) {
-    setDeterminate(this, true)
-  }
-  if (request.status === 200) {
-    setProgress(this, 1)
-    scope.resolve(request)
-    setCompleted(this, true)
-  } else {
-    // Rejecting before setting this as failed gives this status as the promise
-    // rejection reason when aggregated.
-    scope.reject(request.status)
-    setFailed(this, true)
-  }
-}
-
 export default class DataLoader extends EventDispatcher {
   constructor(target) {
     super()
+
+    // Intiial states
     const scope = internal(this)
     scope.request = null
     if (target !== undefined) {
@@ -125,6 +48,11 @@ export default class DataLoader extends EventDispatcher {
     scope.determinate = false
     scope.completed = false
     scope.failed = false
+
+    // Event handlers
+    this.onInitialProgress = this.onInitialProgress.bind(this)
+    this.onProgress = this.onProgress.bind(this)
+    this.onLoadend = this.onLoadend.bind(this)
   }
 
   get request() {
@@ -168,23 +96,21 @@ export default class DataLoader extends EventDispatcher {
       return scope.promise
     }
     if (this.url === null) {
-      return Promise.reject(new Error('Attempt to load without is not set'))
+      return Promise.reject(new Error('Attempt to load without url'))
     }
     scope.promise = new Promise((resolve, reject) => {
       const request = new XMLHttpRequest()
-      scope.handlers = {
-        init: handleInit.bind(this),
-        progress: handleProgress.bind(this),
-        loadend: handleLoadend.bind(this),
-      }
-      request.addEventListener('progress', scope.handlers.init, false)
-      request.addEventListener('progress', scope.handlers.progress, false)
-      request.addEventListener('loadend', scope.handlers.loadend, false)
+      request.addEventListener('progress', this.onInitialProgress, false)
+      request.addEventListener('progress', this.onProgress, false)
+      request.addEventListener('loadend', this.onLoadend, false)
       request.open('get', this.url)
-      request.send()
       scope.request = request
       scope.resolve = resolve
       scope.reject = reject
+
+      // TODO: Support promise return values
+      this.onBeforeLoading(request)
+      request.send()
     })
     return scope.promise
   }
@@ -196,4 +122,64 @@ export default class DataLoader extends EventDispatcher {
     }
     scope.request.abort()
   }
+
+  onInitialProgress(event) {
+    const scope = internal(this)
+    const request = event.target
+    request.removeEventListener('progress', this.onInitialProgress, false)
+    if (request.status < 200 || request.status >= 300) {
+      return
+    }
+    if (scope.size === 0) {
+      if (event.lengthComputable) {
+        setSize(this, event.total)
+      } else {
+        const size = request.getResponseHeader('X-Decompressed-Content-Length')
+        setSize(this, +size || 0)
+      }
+    }
+    if (scope.size !== 0) {
+      setDeterminate(this, true)
+    }
+  }
+
+  onProgress(event) {
+    const scope = internal(this)
+    if (scope.determinate) {
+      setProgress(this, Math.min(1, event.loaded / scope.size))
+    }
+  }
+
+  onLoadend(event) {
+    const scope = internal(this)
+    const request = event.target
+    request.removeEventListener('progress', this.onInitialProgress, false)
+    request.removeEventListener('progress', this.onProgress, false)
+    request.removeEventListener('loadend', this.onLoadend, false)
+    if (!scope.determinate) {
+      setDeterminate(this, true)
+    }
+    if (request.status >= 200 && request.status < 300) {
+      setProgress(this, 1)
+      Promise.resolve(this.onAfterLoading(request))
+        .then(() => {
+          scope.completed = true
+          scope.resolve(request)
+          this.dispatchEvent({ type: 'complete' })
+        })
+        .catch(error => {
+          scope.failed = true
+          scope.reject(error)
+          this.dispatchEvent({ type: 'error' })
+        })
+    } else {
+      scope.failed = true
+      scope.reject(request.status)
+      this.dispatchEvent({ type: 'error' })
+    }
+  }
+
+  onBeforeLoading(request) {}
+
+  onAfterLoading(request) {}
 }
