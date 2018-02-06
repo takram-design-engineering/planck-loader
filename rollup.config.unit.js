@@ -1,26 +1,5 @@
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
 import babel from 'rollup-plugin-babel'
 import commonjs from 'rollup-plugin-commonjs'
@@ -31,7 +10,6 @@ const pkg = require('./package.json')
 
 export default {
   input: './test/unit.js',
-  sourcemap: true,
   plugins: [
     nodeResolve({ browser: true }),
     commonjs(),
@@ -51,21 +29,22 @@ export default {
   intro: 'var BUNDLER = "rollup";',
   external: [
     'source-map-support/register',
-    path.resolve(pkg.browser),
     'chai',
     'mocha',
     'sinon',
+    path.resolve(pkg.browser),
   ],
   globals: {
-    [path.resolve(pkg.browser)]: 'Planck',
     'chai': 'chai',
     'mocha': 'mocha',
     'sinon': 'sinon',
+    [path.resolve(pkg.browser)]: 'Planck',
   },
   output: [
     {
       format: 'iife',
       file: './dist/test/unit/rollup.js',
+      sourcemap: true,
     },
   ],
 }
