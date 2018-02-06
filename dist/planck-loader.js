@@ -274,29 +274,8 @@ var MixinBuilder = function () {
   return MixinBuilder;
 }();
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
 function createNamespace() {
   var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
@@ -315,98 +294,64 @@ function createNamespace() {
   };
 }
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
-var environmentType = function () {
+var isBrowser = function () {
   try {
     // eslint-disable-next-line no-new-func
     if (new Function('return this === window')()) {
-      return 'browser';
+      return true;
     }
   } catch (error) {}
+  return false;
+}();
+
+var isWorker = !isBrowser && function () {
   try {
     // eslint-disable-next-line no-new-func
     if (new Function('return this === self')()) {
-      return 'worker';
+      return true;
     }
   } catch (error) {}
+  return false;
+}();
+
+var isNode = !isBrowser && !isWorker && function () {
   try {
     // eslint-disable-next-line no-new-func
     if (new Function('return this === global')()) {
-      return 'node';
+      return true;
     }
   } catch (error) {}
+  return false;
+}();
+
+var globalScope = function () {
+  if (isBrowser) {
+    return window;
+  }
+  if (isWorker) {
+    // eslint-disable-next-line no-restricted-globals
+    return self;
+  }
+  if (isNode) {
+    return global;
+  }
   return undefined;
 }();
 
-var environmentSelf = void 0;
-switch (environmentType) {
-  case 'browser':
-    environmentSelf = window;
-    break;
-  case 'worker':
-    // eslint-disable-next-line no-restricted-globals
-    environmentSelf = self;
-    break;
-  case 'node':
-    environmentSelf = global;
-    break;
-  default:
-    break;
-}
-
-var Environment = {
-  type: environmentType,
-  self: environmentSelf
+var Global = {
+  isBrowser: isBrowser,
+  isWorker: isWorker,
+  isNode: isNode,
+  scope: globalScope
 };
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
-var internal$2 = createNamespace('Event');
+var internal = createNamespace('Event');
 
 var Event = function () {
   function Event() {
@@ -428,12 +373,12 @@ var Event = function () {
           _ref$cancelable = _ref.cancelable,
           cancelable = _ref$cancelable === undefined ? true : _ref$cancelable;
 
-      var scope = internal$2(this);
+      var scope = internal(this);
       scope.type = type !== undefined ? type : null;
       scope.captures = !!captures;
       scope.bubbles = !!bubbles;
       scope.cancelable = !!cancelable;
-      scope.timeStamp = Environment.self.performance && Environment.self.performance.now && Environment.self.performance.now() || Date.now();
+      scope.timeStamp = Global.scope.performance && Global.scope.performance.now && Global.scope.performance.now() || Date.now();
       scope.propagationStopped = false;
       scope.immediatePropagationStopped = false;
       scope.defaultPrevented = false;
@@ -445,13 +390,13 @@ var Event = function () {
   }, {
     key: 'stopPropagation',
     value: function stopPropagation() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       scope.propagationStopped = true;
     }
   }, {
     key: 'stopImmediatePropagation',
     value: function stopImmediatePropagation() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       scope.propagationStopped = true;
       scope.immediatePropagationStopped = true;
     }
@@ -459,74 +404,74 @@ var Event = function () {
     key: 'preventDefault',
     value: function preventDefault() {
       if (this.cancelable) {
-        var scope = internal$2(this);
+        var scope = internal(this);
         scope.defaultPrevented = true;
       }
     }
   }, {
     key: 'type',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.type;
     }
   }, {
     key: 'target',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.target;
     }
   }, {
     key: 'currentTarget',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.currentTarget;
     }
   }, {
     key: 'eventPhase',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.eventPhase;
     }
   }, {
     key: 'captures',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.captures;
     }
   }, {
     key: 'bubbles',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.bubbles;
     }
   }, {
     key: 'cancelable',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.cancelable;
     }
   }, {
     key: 'timeStamp',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.timeStamp;
     }
   }, {
     key: 'propagationStopped',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.propagationStopped;
     }
   }, {
     key: 'immediatePropagationStopped',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.immediatePropagationStopped;
     }
   }, {
     key: 'defaultPrevented',
     get: function get$$1() {
-      var scope = internal$2(this);
+      var scope = internal(this);
       return scope.defaultPrevented;
     }
   }]);
@@ -534,7 +479,7 @@ var Event = function () {
 }();
 
 function modifyEvent(event) {
-  var scope = internal$2(event);
+  var scope = internal(event);
   return {
     set target(value) {
       scope.target = value !== undefined ? value : null;
@@ -550,29 +495,8 @@ function modifyEvent(event) {
   };
 }
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
 var CustomEvent = function (_Event) {
   inherits(CustomEvent, _Event);
@@ -600,29 +524,8 @@ var CustomEvent = function (_Event) {
   return CustomEvent;
 }(Event);
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
 var GenericEvent = function (_CustomEvent) {
   inherits(GenericEvent, _CustomEvent);
@@ -645,7 +548,9 @@ var GenericEvent = function (_CustomEvent) {
           bubbles = _ref$bubbles === undefined ? false : _ref$bubbles,
           rest = objectWithoutProperties(_ref, ['type', 'target', 'captures', 'bubbles']);
 
-      get(GenericEvent.prototype.__proto__ || Object.getPrototypeOf(GenericEvent.prototype), 'init', this).call(this, { type: type, target: target, captures: captures, bubbles: bubbles });
+      get(GenericEvent.prototype.__proto__ || Object.getPrototypeOf(GenericEvent.prototype), 'init', this).call(this, {
+        type: type, target: target, captures: captures, bubbles: bubbles
+      });
       var names = Object.keys(rest);
       for (var i = 0; i < names.length; ++i) {
         var name = names[i];
@@ -661,29 +566,8 @@ var GenericEvent = function (_CustomEvent) {
   return GenericEvent;
 }(CustomEvent);
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
 var internal$1 = createNamespace('EventDispatcherMixin');
 
@@ -800,18 +684,22 @@ var EventDispatcherMixin = Mixin(function (S) {
         if (listeners === undefined) {
           return;
         }
-        var eventPhase = event.eventPhase;
+        var _event = event,
+            eventPhase = _event.eventPhase;
+
         if (!eventPhase || eventPhase === 'target' || eventPhase === 'capture') {
-          for (var i = 0; i < listeners.capture.length; ++i) {
-            handleEvent(event, listeners.capture[i]);
+          var capture = [].concat(toConsumableArray(listeners.capture));
+          for (var i = 0; i < capture.length; ++i) {
+            handleEvent(event, capture[i]);
             if (event.immediatePropagationStopped) {
               return;
             }
           }
         }
         if (!eventPhase || eventPhase === 'target' || eventPhase === 'bubble') {
-          for (var _i = 0; _i < listeners.bubble.length; ++_i) {
-            handleEvent(event, listeners.bubble[_i]);
+          var bubble = [].concat(toConsumableArray(listeners.bubble));
+          for (var _i = 0; _i < bubble.length; ++_i) {
+            handleEvent(event, bubble[_i]);
             if (event.immediatePropagationStopped) {
               return;
             }
@@ -823,29 +711,8 @@ var EventDispatcherMixin = Mixin(function (S) {
   }(S);
 });
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2016-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2016-Present Shota Matsuda
 
 var EventDispatcher = function (_mix$with) {
   inherits(EventDispatcher, _mix$with);
@@ -864,34 +731,13 @@ var EventDispatcher = function (_mix$with) {
   return _class;
 }()).with(EventDispatcherMixin));
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2017-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2017-Present Shota Matsuda
 
-var internal = createNamespace('DataLoader');
+var internal$2 = createNamespace('DataLoader');
 
 function setSize(target, value) {
-  var scope = internal(target);
+  var scope = internal$2(target);
   if (value !== scope.size) {
     scope.size = value;
     target.dispatchEvent({ type: 'size' });
@@ -899,7 +745,7 @@ function setSize(target, value) {
 }
 
 function setProgress(target, value) {
-  var scope = internal(target);
+  var scope = internal$2(target);
   if (value !== scope.progress) {
     scope.progress = value;
     target.dispatchEvent({ type: 'progress' });
@@ -907,7 +753,7 @@ function setProgress(target, value) {
 }
 
 function setDeterminate(target, value) {
-  var scope = internal(target);
+  var scope = internal$2(target);
   if (value !== scope.determinate) {
     scope.determinate = value;
     target.dispatchEvent({ type: 'determinate' });
@@ -923,7 +769,7 @@ var DataLoader = function (_EventDispatcher) {
     // Intiial states
     var _this = possibleConstructorReturn(this, (DataLoader.__proto__ || Object.getPrototypeOf(DataLoader)).call(this));
 
-    var scope = internal(_this);
+    var scope = internal$2(_this);
     scope.request = null;
     if (target !== undefined) {
       scope.url = target.url || target;
@@ -949,7 +795,7 @@ var DataLoader = function (_EventDispatcher) {
     value: function load() {
       var _this2 = this;
 
-      var scope = internal(this);
+      var scope = internal$2(this);
       if (scope.promise !== undefined) {
         return scope.promise;
       }
@@ -975,7 +821,7 @@ var DataLoader = function (_EventDispatcher) {
   }, {
     key: 'abort',
     value: function abort() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       if (scope.promise === undefined) {
         return;
       }
@@ -984,7 +830,7 @@ var DataLoader = function (_EventDispatcher) {
   }, {
     key: 'onInitialProgress',
     value: function onInitialProgress(event) {
-      var scope = internal(this);
+      var scope = internal$2(this);
       var request = event.target;
       request.removeEventListener('progress', this.onInitialProgress, false);
       if (request.status < 200 || request.status >= 300) {
@@ -1005,7 +851,7 @@ var DataLoader = function (_EventDispatcher) {
   }, {
     key: 'onProgress',
     value: function onProgress(event) {
-      var scope = internal(this);
+      var scope = internal$2(this);
       if (scope.determinate) {
         setProgress(this, Math.min(1, event.loaded / scope.size));
       }
@@ -1015,7 +861,7 @@ var DataLoader = function (_EventDispatcher) {
     value: function onLoadend(event) {
       var _this3 = this;
 
-      var scope = internal(this);
+      var scope = internal$2(this);
       var request = event.target;
       request.removeEventListener('progress', this.onInitialProgress, false);
       request.removeEventListener('progress', this.onProgress, false);
@@ -1049,72 +895,51 @@ var DataLoader = function (_EventDispatcher) {
   }, {
     key: 'request',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.request;
     }
   }, {
     key: 'url',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.url;
     }
   }, {
     key: 'size',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.size;
     }
   }, {
     key: 'progress',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.progress;
     }
   }, {
     key: 'determinate',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.determinate;
     }
   }, {
     key: 'completed',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.completed;
     }
   }, {
     key: 'failed',
     get: function get$$1() {
-      var scope = internal(this);
+      var scope = internal$2(this);
       return scope.failed;
     }
   }]);
   return DataLoader;
 }(EventDispatcher);
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2017-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2017-Present Shota Matsuda
 
 var ScriptLoader = function (_DataLoader) {
   inherits(ScriptLoader, _DataLoader);
@@ -1148,29 +973,8 @@ var ScriptLoader = function (_DataLoader) {
   return ScriptLoader;
 }(DataLoader);
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2017-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2017-Present Shota Matsuda
 
 var internal$3 = createNamespace('Loader');
 
@@ -1424,29 +1228,8 @@ var Loader = function (_EventDispatcher) {
   return Loader;
 }(EventDispatcher);
 
-//
-//  The MIT License
-//
-//  Copyright (C) 2017-Present Shota Matsuda
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
+// The MIT License
+// Copyright (C) 2017-Present Shota Matsuda
 
 exports.DataLoader = DataLoader;
 exports.Loader = Loader;
