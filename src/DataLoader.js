@@ -1,12 +1,14 @@
 // The MIT License
 // Copyright (C) 2017-Present Shota Matsuda
 
+/* eslint-env browser */
+
 import EventDispatcher from '@takram/planck-event/src/EventDispatcher'
 import Namespace from '@takram/planck-core/src/Namespace'
 
 export const internal = Namespace('DataLoader')
 
-function setSize(target, value) {
+function setSize (target, value) {
   const scope = internal(target)
   if (value !== scope.size) {
     scope.size = value
@@ -14,7 +16,7 @@ function setSize(target, value) {
   }
 }
 
-function setProgress(target, value) {
+function setProgress (target, value) {
   const scope = internal(target)
   if (value !== scope.progress) {
     scope.progress = value
@@ -22,7 +24,7 @@ function setProgress(target, value) {
   }
 }
 
-function setDeterminate(target, value) {
+function setDeterminate (target, value) {
   const scope = internal(target)
   if (value !== scope.determinate) {
     scope.determinate = value
@@ -31,7 +33,7 @@ function setDeterminate(target, value) {
 }
 
 export default class DataLoader extends EventDispatcher {
-  constructor(target) {
+  constructor (target) {
     super()
 
     // Intiial states
@@ -55,42 +57,42 @@ export default class DataLoader extends EventDispatcher {
     this.onLoadend = this.onLoadend.bind(this)
   }
 
-  get request() {
+  get request () {
     const scope = internal(this)
     return scope.request
   }
 
-  get url() {
+  get url () {
     const scope = internal(this)
     return scope.url
   }
 
-  get size() {
+  get size () {
     const scope = internal(this)
     return scope.size
   }
 
-  get progress() {
+  get progress () {
     const scope = internal(this)
     return scope.progress
   }
 
-  get determinate() {
+  get determinate () {
     const scope = internal(this)
     return scope.determinate
   }
 
-  get completed() {
+  get completed () {
     const scope = internal(this)
     return scope.completed
   }
 
-  get failed() {
+  get failed () {
     const scope = internal(this)
     return scope.failed
   }
 
-  load() {
+  load () {
     const scope = internal(this)
     if (scope.promise !== undefined) {
       return scope.promise
@@ -115,7 +117,7 @@ export default class DataLoader extends EventDispatcher {
     return scope.promise
   }
 
-  abort() {
+  abort () {
     const scope = internal(this)
     if (scope.promise === undefined) {
       return
@@ -123,7 +125,7 @@ export default class DataLoader extends EventDispatcher {
     scope.request.abort()
   }
 
-  onInitialProgress(event) {
+  onInitialProgress (event) {
     const scope = internal(this)
     const request = event.target
     request.removeEventListener('progress', this.onInitialProgress, false)
@@ -143,14 +145,14 @@ export default class DataLoader extends EventDispatcher {
     }
   }
 
-  onProgress(event) {
+  onProgress (event) {
     const scope = internal(this)
     if (scope.determinate) {
       setProgress(this, Math.min(1, event.loaded / scope.size))
     }
   }
 
-  onLoadend(event) {
+  onLoadend (event) {
     const scope = internal(this)
     const request = event.target
     request.removeEventListener('progress', this.onInitialProgress, false)
@@ -179,7 +181,7 @@ export default class DataLoader extends EventDispatcher {
     }
   }
 
-  onBeforeLoading(request) {}
+  onBeforeLoading (request) {}
 
-  onAfterLoading(request) {}
+  onAfterLoading (request) {}
 }

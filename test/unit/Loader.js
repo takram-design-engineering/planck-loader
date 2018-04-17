@@ -1,6 +1,9 @@
 // The MIT License
 // Copyright (C) 2017-Present Shota Matsuda
 
+/* eslint-env browser */
+/* eslint-disable no-unused-expressions */
+
 import 'source-map-support/register'
 
 import chai from 'chai'
@@ -14,7 +17,6 @@ const { expect } = chai
 chai.use(chaiAsPromised)
 chai.use(sinonChai)
 
-// eslint-disable-next-line func-names
 describe('Loader', function () {
   this.timeout(30000)
 
@@ -94,7 +96,7 @@ describe('Loader', function () {
       expect(loader2.load()).rejected.then(() => {
         expect(loader2.completed).equal(false)
         expect(loader2.failed).equal(true)
-      }),
+      })
     ])
   })
 
@@ -164,7 +166,7 @@ describe('Loader', function () {
       expect(loader2.load()).rejected.then(() => {
         expect(completionSpy2).not.called
         expect(failureSpy2).calledWith(true)
-      }),
+      })
     ])
   })
 
@@ -172,7 +174,7 @@ describe('Loader', function () {
     server.respondWith('GET', 'data', [200, {}, ''])
     const loader = new Loader([
       'data',
-      { url: 'data', size: 1024 },
+      { url: 'data', size: 1024 }
     ])
     expect(loader.size).equal(1024)
     return expect(loader.load()).fulfilled
@@ -213,7 +215,7 @@ describe('Loader', function () {
     const loader = new Loader(
       'data/1',
       'data/2',
-      'data/3',
+      'data/3'
     )
     const spies = loader.loaders.map(loader => {
       const spy = sinon.spy()
@@ -238,7 +240,7 @@ describe('Loader', function () {
     const loader = new Loader([
       'data/3',
       'data/2',
-      'data/1',
+      'data/1'
     ])
     const spies = loader.loaders.map(loader => {
       const spy = sinon.spy()
@@ -300,7 +302,7 @@ describe('Loader', function () {
       ['data/3', 'data/2'],
       'data/4',
       ['data/6', 'data/5'],
-      'data/7',
+      'data/7'
     )
     const spies = loader.loaders.map(loader => {
       const spy = sinon.spy()

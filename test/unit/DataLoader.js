@@ -1,6 +1,9 @@
 // The MIT License
 // Copyright (C) 2017-Present Shota Matsuda
 
+/* eslint-env browser */
+/* eslint-disable no-unused-expressions */
+
 import 'source-map-support/register'
 
 import chai from 'chai'
@@ -14,7 +17,6 @@ const { expect } = chai
 chai.use(chaiAsPromised)
 chai.use(sinonChai)
 
-// eslint-disable-next-line func-names
 describe('DataLoader', function () {
   this.timeout(30000)
 
@@ -91,7 +93,7 @@ describe('DataLoader', function () {
       expect(loader2.load()).rejected.then(() => {
         expect(loader2.completed).equal(false)
         expect(loader2.failed).equal(true)
-      }),
+      })
     ])
   })
 
@@ -161,7 +163,7 @@ describe('DataLoader', function () {
       expect(loader2.load()).rejected.then(() => {
         expect(completionSpy2).not.called
         expect(failureSpy2).calledWith(true)
-      }),
+      })
     ])
   })
 

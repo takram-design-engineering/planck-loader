@@ -4,7 +4,7 @@
 import DataLoader from './DataLoader'
 
 export default class ScriptLoader extends DataLoader {
-  onAfterLoading(request) {
+  onAfterLoading (request) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script')
       script.type = 'text/javascript'

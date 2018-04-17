@@ -9,7 +9,7 @@ import ScriptLoader from './ScriptLoader'
 
 export const internal = Namespace('Loader')
 
-function construct(entries) {
+function construct (entries) {
   return entries.map(entry => {
     if (Array.isArray(entry)) {
       return construct(entry)
@@ -25,7 +25,7 @@ function construct(entries) {
   })
 }
 
-function expand(entries) {
+function expand (entries) {
   return entries.reduce((loaders, entry) => {
     if (Array.isArray(entry)) {
       return loaders.concat(expand(entry))
@@ -36,7 +36,7 @@ function expand(entries) {
 }
 
 export default class Loader extends EventDispatcher {
-  constructor(...sequence) {
+  constructor (...sequence) {
     super()
 
     // Initial states
@@ -63,19 +63,19 @@ export default class Loader extends EventDispatcher {
     })
   }
 
-  get loaders() {
+  get loaders () {
     const scope = internal(this)
     return [...scope.loaders]
   }
 
-  get size() {
+  get size () {
     const scope = internal(this)
     return scope.loaders.reduce((size, loader) => {
       return size + loader.size
     }, 0)
   }
 
-  get progress() {
+  get progress () {
     const scope = internal(this)
 
     // Calculate the aggregate progress by the number of loaders when the sizes
@@ -97,34 +97,34 @@ export default class Loader extends EventDispatcher {
     }, 0))
   }
 
-  get determinate() {
+  get determinate () {
     const scope = internal(this)
     return scope.determinate
   }
 
-  get completed() {
+  get completed () {
     const scope = internal(this)
     return scope.completed
   }
 
-  get failed() {
+  get failed () {
     const scope = internal(this)
     return scope.failed
   }
 
-  load() {
+  load () {
     const scope = internal(this)
     if (scope.promise !== undefined) {
       return scope.promise
     }
     if (this.loaders.length === 0) {
-      return Promise.reject()
+      return Promise.reject(new Error('Attempt to load without a target'))
     }
     scope.promise = this.constructor.loadSequentially(scope.sequence)
     return scope.promise
   }
 
-  abort() {
+  abort () {
     const scope = internal(this)
     if (scope.promise === undefined) {
       return
@@ -134,7 +134,7 @@ export default class Loader extends EventDispatcher {
     })
   }
 
-  static loadParallelly(loaders) {
+  static loadParallelly (loaders) {
     return Promise.all(loaders.map(loader => {
       if (Array.isArray(loader)) {
         return this.loadSequentially(loader)
@@ -147,7 +147,7 @@ export default class Loader extends EventDispatcher {
     })
   }
 
-  static loadSequentially(loaders) {
+  static loadSequentially (loaders) {
     if (loaders.length === 0) {
       return Promise.resolve([])
     }
@@ -175,16 +175,16 @@ export default class Loader extends EventDispatcher {
     }, null)
   }
 
-  onSize(event) {
+  onSize (event) {
     event.target.removeEventListener('size', this.onSize, false)
     this.dispatchEvent({ type: 'size' })
   }
 
-  onProgress(event) {
+  onProgress (event) {
     this.dispatchEvent({ type: 'progress' })
   }
 
-  onDeterminate(event) {
+  onDeterminate (event) {
     event.target.removeEventListener('determinate', this.onDeterminate, false)
     const scope = internal(this)
     const value = scope.loaders.every(loader => {
@@ -196,7 +196,7 @@ export default class Loader extends EventDispatcher {
     }
   }
 
-  onComplete(event) {
+  onComplete (event) {
     const scope = internal(this)
     const value = scope.loaders.every(loader => {
       return loader.completed
@@ -207,7 +207,7 @@ export default class Loader extends EventDispatcher {
     }
   }
 
-  onError(event) {
+  onError (event) {
     const scope = internal(this)
     const value = scope.loaders.some(loader => {
       return loader.failed
