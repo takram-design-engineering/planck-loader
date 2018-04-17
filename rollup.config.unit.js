@@ -33,7 +33,8 @@ export default {
     'chai',
     'mocha',
     'sinon',
-    'source-map-support/register'
+    'source-map-support/register',
+    '@takram/planck-core'
   ],
   output: {
     intro: 'var BUNDLER = "rollup";',
@@ -42,6 +43,7 @@ export default {
       'chai': 'chai',
       'mocha': 'mocha',
       'sinon': 'sinon',
+      '@takram/planck-core': 'Planck'
     },
     format: 'iife',
     file: './dist/test/unit/rollup.js',
