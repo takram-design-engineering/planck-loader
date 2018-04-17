@@ -98,18 +98,15 @@ export default class Loader extends EventDispatcher {
   }
 
   get determinate () {
-    const scope = internal(this)
-    return scope.determinate
+    return internal(this).determinate
   }
 
   get completed () {
-    const scope = internal(this)
-    return scope.completed
+    return internal(this).completed
   }
 
   get failed () {
-    const scope = internal(this)
-    return scope.failed
+    return internal(this).failed
   }
 
   load () {

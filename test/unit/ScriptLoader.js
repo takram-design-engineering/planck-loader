@@ -21,11 +21,9 @@ describe('ScriptLoader', function () {
   })
 
   it('loads script', () => {
-    // eslint-disable-next-line no-restricted-globals
     Global.scope.planck_script_loader_test_flag = undefined
     const loader = new ScriptLoader('/test/unit/data/script')
     return expect(loader.load()).fulfilled.then(() => {
-      // eslint-disable-next-line no-restricted-globals
       expect(Global.scope.planck_script_loader_test_flag).not.undefined
     })
   })

@@ -58,38 +58,31 @@ export default class DataLoader extends EventDispatcher {
   }
 
   get request () {
-    const scope = internal(this)
-    return scope.request
+    return internal(this).request
   }
 
   get url () {
-    const scope = internal(this)
-    return scope.url
+    return internal(this).url
   }
 
   get size () {
-    const scope = internal(this)
-    return scope.size
+    return internal(this).size
   }
 
   get progress () {
-    const scope = internal(this)
-    return scope.progress
+    return internal(this).progress
   }
 
   get determinate () {
-    const scope = internal(this)
-    return scope.determinate
+    return internal(this).determinate
   }
 
   get completed () {
-    const scope = internal(this)
-    return scope.completed
+    return internal(this).completed
   }
 
   get failed () {
-    const scope = internal(this)
-    return scope.failed
+    return internal(this).failed
   }
 
   load () {
